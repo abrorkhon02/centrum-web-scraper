@@ -3,9 +3,332 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
+    <title>Search Parameters</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css"
+      integrity="sha384-TX8t27EcRE3e/ihU7zmQxVncDAy5uIKz4rEkgIXeMed4M0jlfIDPvg6uqKI2xXr2"
+      crossorigin="anonymous"
+    />
   </head>
   <body>
-    HUH?
+    <form [formGroup]="searchForm" (ngSubmit)="onSubmit()" class="search-form">
+      <div class="form-row">
+        <!-- Country Selector -->
+        <div class="form-group col-md-6">
+          <mat-form-field appearance="fill">
+            <mat-label>Destination Country</mat-label>
+            <mat-select formControlName="country">
+              <mat-option
+                *ngFor="let country of countries"
+                [value]="country.value"
+              >
+                {{ country.label }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <!-- Departure City Selector -->
+        <div class="form-group col-md-6">
+          <mat-form-field appearance="fill">
+            <mat-label>Destination City</mat-label>
+            <mat-select formControlName="departureCity">
+              <mat-option *ngFor="let city of cities" [value]="city.value">
+                {{ city.label }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <!-- Departure Date Picker -->
+        <div class="form-group col-md-6">
+          <mat-form-field appearance="fill">
+            <mat-label>Departure Date</mat-label>
+            <input
+              matInput
+              [matDatepicker]="departureDatePicker"
+              formControlName="departureDate"
+            />
+            <mat-datepicker-toggle
+              matSuffix
+              [for]="departureDatePicker"
+            ></mat-datepicker-toggle>
+            <mat-datepicker #departureDatePicker></mat-datepicker>
+          </mat-form-field>
+        </div>
+
+        <!-- Return Date Picker -->
+        <div class="form-group col-md-6">
+          <mat-form-field appearance="fill">
+            <mat-label>Return Date</mat-label>
+            <input
+              matInput
+              [matDatepicker]="returnDatePicker"
+              formControlName="returnDate"
+            />
+            <mat-datepicker-toggle
+              matSuffix
+              [for]="returnDatePicker"
+            ></mat-datepicker-toggle>
+            <mat-datepicker #returnDatePicker></mat-datepicker>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- Nights From and To Number Pickers -->
+      <div class="form-row">
+        <div class="form-group col-md-6">
+          <mat-form-field appearance="fill">
+            <mat-label>Nights From</mat-label>
+            <mat-select formControlName="nightsFrom">
+              <mat-option *ngFor="let night of nightOptions" [value]="night">{{
+                night
+              }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="form-group col-md-6">
+          <mat-form-field appearance="fill">
+            <mat-label>Nights To</mat-label>
+            <mat-select formControlName="nightsTo">
+              <mat-option *ngFor="let night of nightOptions" [value]="night">{{
+                night
+              }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- Hotel Star Rating Filter Checkboxes -->
+      <div class="form-row">
+        <div class="form-group col-md-12">
+          <label>Star Rating:</label>
+          <div formArrayName="hotelStars">
+            <mat-checkbox
+              *ngFor="
+                let control of hotelStarsFormArray.controls;
+                let i = index
+              "
+              [formControlName]="i"
+            >
+              {{ starRatings[i].name }}
+            </mat-checkbox>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hotel Search Input -->
+      <div class="form-row">
+        <div class="form-group col-md-12">
+          <mat-form-field appearance="fill" class="search-field">
+            <input
+              matInput
+              placeholder="Search Hotels"
+              (keyup)="searchHotels($event)"
+              #searchInput
+            />
+          </mat-form-field>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group col-md-12 check-buttons">
+          <!-- Check All and Uncheck All Buttons -->
+          <button
+            mat-raised-button
+            color="primary"
+            (click)="checkAllHotels(); $event.preventDefault()"
+          >
+            Check All
+          </button>
+          <button
+            mat-button
+            (click)="uncheckAllHotels(); $event.preventDefault()"
+          >
+            Uncheck All
+          </button>
+        </div>
+      </div>
+
+      <!-- Hotel Dropdown -->
+      <div class="form-row">
+        <div class="form-group col-md-12">
+          <mat-form-field appearance="fill" class="hotel-dropdown">
+            <mat-label>Hotels</mat-label>
+            <mat-select
+              #hotelSelect
+              formArrayName="hotels"
+              multiple
+              [panelClass]="'wide-dropdown'"
+            >
+              <mat-option
+                *ngFor="let hotel of filteredHotels"
+                [value]="hotel.name"
+                >{{ hotel.name }}</mat-option
+              >
+            </mat-select>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- Meal Types Multi-select Dropdown -->
+      <div class="form-row">
+        <div class="form-group col-md-6">
+          <mat-form-field appearance="fill">
+            <mat-label>Meal Types</mat-label>
+            <mat-select formArrayName="mealTypes" multiple>
+              <mat-option
+                *ngFor="
+                  let control of mealTypesFormArray.controls;
+                  let i = index
+                "
+                [value]="meals[i].name"
+              >
+                {{ meals[i].name }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="form-group col-md-6">
+          <mat-form-field appearance="fill">
+            <mat-label>Room Types</mat-label>
+            <mat-select formArrayName="roomTypes" multiple>
+              <mat-option
+                *ngFor="let roomType of roomTypes"
+                [value]="roomType.name"
+                >{{ roomType.name }}</mat-option
+              >
+            </mat-select>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- Filters Multi-select Dropdown -->
+      <div class="form-row">
+        <div class="form-group col-md-12">
+          <mat-form-field appearance="fill" class="filter-dropdown">
+            <mat-label>Filters</mat-label>
+            <mat-select formControlName="filters" multiple>
+              <mat-select-trigger>
+                {{
+                  searchForm.get("filters")?.value
+                    ? searchForm.get("filters")?.value.join(", ")
+                    : ""
+                }}
+              </mat-select-trigger>
+              <mat-option
+                *ngFor="let filter of filterOptions"
+                [value]="filter.value"
+              >
+                {{ filter.label }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group col-md-6">
+          <!-- Adults Selector -->
+          <mat-form-field appearance="fill">
+            <mat-label>Adults</mat-label>
+            <mat-select formControlName="adults">
+              <!-- Generate options dynamically if needed, or use a static list -->
+              <mat-option
+                *ngFor="let number of [1, 2, 3, 4, 5]"
+                [value]="number"
+              >
+                {{ number }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="form-group col-md-6">
+          <!-- Children Selector -->
+          <mat-form-field appearance="fill">
+            <mat-label>Children</mat-label>
+            <mat-select
+              formControlName="children"
+              (selectionChange)="onChildrenCountChanged($event)"
+            >
+              <mat-option
+                *ngFor="let number of [0, 1, 2, 3, 4]"
+                [value]="number"
+              >
+                {{ number }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- Iterate over childrenAges FormArray to generate age selectors -->
+      <div formArrayName="childrenAges">
+        <ng-container
+          *ngFor="let childAgeFormGroup of childrenAges.controls; let i = index"
+        >
+          <!-- Wrap each pair of children age inputs in a form-row div -->
+          <div class="form-row" *ngIf="i % 2 === 0">
+            <div class="form-group col-md-6" [formGroupName]="i">
+              <mat-form-field appearance="fill">
+                <mat-label>Age of Child {{ i + 1 }}</mat-label>
+                <input
+                  matInput
+                  formControlName="age"
+                  placeholder="Enter age"
+                  type="number"
+                />
+              </mat-form-field>
+            </div>
+            <!-- Check if the next child age control exists before rendering it -->
+            <div
+              class="form-group col-md-6"
+              *ngIf="childrenAges.at(i + 1)"
+              [formGroupName]="i + 1"
+            >
+              <mat-form-field appearance="fill">
+                <mat-label>Age of Child {{ i + 2 }}</mat-label>
+                <input
+                  matInput
+                  formControlName="age"
+                  placeholder="Enter age"
+                  type="number"
+                />
+              </mat-form-field>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group col-md-6">
+          <!-- Price Range -->
+          <div formGroupName="priceRange">
+            <mat-form-field appearance="fill">
+              <mat-label>Min Price</mat-label>
+              <input matInput formControlName="minPrice" type="number" />
+            </mat-form-field>
+          </div>
+        </div>
+
+        <div class="form-group col-md-6">
+          <mat-form-field appearance="fill">
+            <mat-label>Max Price</mat-label>
+            <input matInput formControlName="maxPrice" type="number" />
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- Submit and Reset Buttons -->
+      <div class="form-row">
+        <div class="form-group col-md-12 button-group">
+          <button class="btn" color="primary" type="submit">Start</button>
+          <button class="btn" type="button" (click)="onReset()">Reset</button>
+        </div>
+      </div>
+    </form>
   </body>
 </html>
