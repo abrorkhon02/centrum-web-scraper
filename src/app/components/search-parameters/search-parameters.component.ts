@@ -20,6 +20,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { ScraperService } from '../../services/scraper.service';
 
 @Component({
   selector: 'app-search-parameters',
@@ -91,17 +92,15 @@ export class SearchParametersComponent implements OnInit {
 
   constructor(
     private fb: FormBuilder,
-    private hotelDataService: HotelDataService
+    private hotelDataService: HotelDataService,
+    private scraperService: ScraperService
   ) {}
 
   ngOnInit(): void {
     this.initializeForm();
     this.fetchHotels();
     this.initializeFilters();
-    this.hotelStarsFormArray.valueChanges.subscribe((values) => {
-      console.log('Star ratings changed:', values);
-      this.filterHotelsByStarRating(values);
-    });
+    this.valueChangesWatcher();
   }
 
   ngAfterViewInit(): void {
@@ -115,10 +114,10 @@ export class SearchParametersComponent implements OnInit {
     this.searchForm.get('filters')?.setValue(filters);
   }
 
-  private initializeForm() {
+  private initializeForm(): void {
     this.searchForm = this.fb.group({
-      departureCity: ['', Validators.required],
       country: ['', Validators.required],
+      departureCity: ['', Validators.required],
       departureDate: ['', Validators.required],
       returnDate: ['', Validators.required],
       nightsFrom: ['', Validators.required],
@@ -127,27 +126,26 @@ export class SearchParametersComponent implements OnInit {
       children: [0, Validators.min(0)],
       childrenAges: this.fb.array([]),
       hotelStars: this.buildFormArray(this.starRatings),
+      selectedHotels: this.fb.array(this.hotels.map((hotel) => hotel.name)),
       hotels: this.buildFormArray([]),
-      selectedHotel: ['', Validators.required],
-      mealTypes: this.buildFormArray(this.meals),
-      roomTypes: this.buildFormArray(this.roomTypes),
+      roomTypes: this.fb.array(this.roomTypes.map((roomType) => roomType.name)),
+      mealTypes: this.fb.array(this.meals.map((meal) => meal.name)),
       cities: this.buildFormArray(this.cities),
-      hotelCategories: new FormArray([]),
       priceRange: this.fb.group({
-        minPrice: ['', [Validators.required, Validators.min(0)]],
-        maxPrice: ['', [Validators.required, Validators.min(0)]],
+        minPrice: [''],
+        maxPrice: [''],
       }),
       filters: [],
     });
-    const hotelStarsControls = this.starRatings.map((starRating) =>
-      this.fb.control(starRating.selected)
-    );
-    this.searchForm.setControl('hotelStars', this.fb.array(hotelStarsControls));
     this.nightOptions = [3, 4, 7, 10, 11, 14];
     this.searchForm.patchValue({
       nightsFrom: this.nightOptions[0],
       nightsTo: this.nightOptions[0],
     });
+    this.searchForm.setControl(
+      'selectedHotels',
+      this.fb.array(this.hotels.map(() => this.fb.control(false)))
+    );
     this.searchForm.setControl(
       'hotelStars',
       this.buildFormArray(this.starRatings)
@@ -159,7 +157,50 @@ export class SearchParametersComponent implements OnInit {
       'roomTypes',
       this.buildFormGroupArray(this.roomTypes)
     );
+
+    this.searchForm.setControl('meals', this.buildFormGroupArray(this.meals));
     this.setInitialChildrenAges(this.searchForm.get('children')?.value);
+  }
+
+  private valueChangesWatcher(): void {
+    this.hotelStarsFormArray.valueChanges.subscribe((values) => {
+      console.log('Star ratings changed:', values);
+      this.filterHotelsByStarRating(values);
+    });
+    this.mealTypesFormArray.valueChanges.subscribe((values) => {
+      console.log('Meal types selection changed:', values);
+    });
+    this.selectedHotelsFormArray.valueChanges.subscribe((values) => {
+      console.log('Meal types selection changed:', values);
+    });
+    this.roomTypesFormArray.valueChanges.subscribe((values) => {
+      console.log('Meal types selection changed:', values);
+    });
+  }
+
+  protected onSelectedHotelsChange(event: MatSelectChange): void {
+    const selectedHotelsArray = this.searchForm.get(
+      'selectedHotels'
+    ) as FormArray;
+    const values = event.value;
+    selectedHotelsArray.clear();
+    values.forEach((value: any) =>
+      selectedHotelsArray.push(this.fb.control(value))
+    );
+  }
+
+  protected onRoomTypesChange(event: MatSelectChange): void {
+    const roomTypesArray = this.searchForm.get('roomTypes') as FormArray;
+    const values = event.value;
+    roomTypesArray.clear();
+    values.forEach((value: any) => roomTypesArray.push(this.fb.control(value)));
+  }
+
+  protected onMealTypesChange(event: MatSelectChange): void {
+    const mealTypesArray = this.searchForm.get('mealTypes') as FormArray;
+    const values = event.value;
+    mealTypesArray.clear();
+    values.forEach((value: any) => mealTypesArray.push(this.fb.control(value)));
   }
 
   private buildFormArray(items: any[]): FormArray {
@@ -177,7 +218,7 @@ export class SearchParametersComponent implements OnInit {
     );
   }
 
-  protected searchHotels(event: Event) {
+  protected searchHotels(event: Event): void {
     this.hotelSelect.open();
     const inputElement = event.target as HTMLInputElement;
     const value = inputElement.value.trim().toLowerCase();
@@ -205,7 +246,7 @@ export class SearchParametersComponent implements OnInit {
     );
   }
 
-  private fetchHotels() {
+  private fetchHotels(): void {
     this.hotelDataService
       .getHotels()
       .pipe(
@@ -228,39 +269,27 @@ export class SearchParametersComponent implements OnInit {
       .subscribe();
   }
 
-  private initializeHotelFormArray() {
+  private initializeHotelFormArray(): void {
     const hotelsFormArray = this.searchForm.get('hotels') as FormArray;
     hotelsFormArray.clear();
-    this.hotels.forEach((hotel) =>
-      hotelsFormArray.push(this.fb.control(hotel.selected))
-    );
-    console.log('Hotels Form Array initialized:', hotelsFormArray.value);
+    this.hotels.forEach((hotel) => {
+      hotelsFormArray.push(this.fb.control(hotel.selected));
+    });
   }
 
   protected checkAllHotels(): void {
     const hotelsFormArray = this.searchForm.get('hotels') as FormArray;
     this.hotels.forEach((hotel, index) => {
-      hotel.selected = true; // Update the internal model
-      hotelsFormArray.at(index).setValue(true); // Update the form control
+      hotel.selected = true;
+      hotelsFormArray.at(index).setValue(true);
     });
   }
 
   protected uncheckAllHotels(): void {
     const hotelsFormArray = this.searchForm.get('hotels') as FormArray;
     this.hotels.forEach((hotel, index) => {
-      hotel.selected = false; // Update the internal model
-      hotelsFormArray.at(index).setValue(false); // Update the form control
-    });
-  }
-
-  private updateHotelSelectionState(selected: boolean) {
-    // Update the internal model
-    this.hotels.forEach((hotel) => (hotel.selected = selected));
-    // Update the form array controls with the new selected state
-    const hotelsFormArray = this.searchForm.get('hotels') as FormArray;
-    hotelsFormArray.clear();
-    this.hotels.forEach((hotel) => {
-      hotelsFormArray.push(this.fb.control(hotel.selected));
+      hotel.selected = false;
+      hotelsFormArray.at(index).setValue(false);
     });
   }
 
@@ -282,16 +311,16 @@ export class SearchParametersComponent implements OnInit {
     this.setInitialChildrenAges(newCount);
   }
 
+  get selectedHotelsFormArray(): FormArray {
+    return this.searchForm.get('selectedHotels') as FormArray;
+  }
+
   get childrenAges(): FormArray {
     return this.searchForm.get('childrenAges') as FormArray;
   }
 
   get hotelStarsFormArray(): FormArray {
     return this.searchForm.get('hotelStars') as FormArray;
-  }
-
-  get hotelCategories() {
-    return this.searchForm.get('hotelCategories') as FormArray;
   }
 
   get mealTypesFormArray(): FormArray {
@@ -302,13 +331,68 @@ export class SearchParametersComponent implements OnInit {
     return this.searchForm.get('roomTypes') as FormArray;
   }
 
-  protected onSubmit() {
+  protected buildSearchPayload(): any {
+    const formValue = this.searchForm.value;
+
+    const hotelStars = formValue.hotelStars
+      .map((selected: boolean, index: number) =>
+        selected ? this.starRatings[index].value : null
+      )
+      .filter((v: string | null) => v !== null);
+
+    const selectedHotels = this.selectedHotelsFormArray.value;
+    const mealTypes = this.mealTypesFormArray.value;
+    const roomTypes = this.roomTypesFormArray.value;
+
+    const payload = {
+      destinationCountry: formValue.country,
+      departureCity: formValue.departureCity,
+      departureDate: formValue.departureDate,
+      returnDate: formValue.returnDate,
+      nights: {
+        from: formValue.nightsFrom,
+        to: formValue.nightsTo,
+      },
+      adults: formValue.adults,
+      children: formValue.children,
+      childrenAges: formValue.childrenAges.map((child: any) => child.age),
+      hotelStars,
+      selectedHotels,
+      mealTypes,
+      roomTypes,
+      priceRange: {
+        min: formValue.priceRange.minPrice,
+        max: formValue.priceRange.maxPrice,
+      },
+      filters: formValue.filters,
+    };
+
+    return payload;
+  }
+
+  private onScrapeHotels(): void {
+    this.scraperService.scrapeHotels().subscribe({
+      next: (hotelNames) => console.log('Scraped hotel names:', hotelNames),
+      error: (error) => console.error('Scraping error:', error),
+    });
+  }
+
+  protected onSubmit(): void {
     if (this.searchForm.valid) {
-      console.log(this.searchForm.value);
+      const searchPayload = this.buildSearchPayload();
+      console.log('Here is the submit data', this.searchForm.value);
+      console.log('Sending search payload:', searchPayload);
+
+      this.scraperService.sendSearchData(searchPayload).subscribe({
+        next: (response) => console.log('Search initiated', response),
+        error: (error) => console.error('Error initiating search:', error),
+      });
+    } else {
+      console.error('Form is not valid:', this.searchForm.errors);
     }
   }
 
-  protected onReset() {
+  protected onReset(): void {
     this.searchForm.reset();
   }
 }

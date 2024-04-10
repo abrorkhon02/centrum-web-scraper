@@ -159,16 +159,16 @@
           <mat-form-field appearance="fill" class="hotel-dropdown">
             <mat-label>Hotels</mat-label>
             <mat-select
-              #hotelSelect
-              formArrayName="hotels"
+              formArrayName="selectedHotels"
               multiple
-              [panelClass]="'wide-dropdown'"
+              (selectionChange)="onSelectedHotelsChange($event)"
             >
               <mat-option
                 *ngFor="let hotel of filteredHotels"
                 [value]="hotel.name"
-                >{{ hotel.name }}</mat-option
               >
+                {{ hotel.name }}
+              </mat-option>
             </mat-select>
           </mat-form-field>
         </div>
@@ -179,15 +179,13 @@
         <div class="form-group col-md-6">
           <mat-form-field appearance="fill">
             <mat-label>Meal Types</mat-label>
-            <mat-select formArrayName="mealTypes" multiple>
-              <mat-option
-                *ngFor="
-                  let control of mealTypesFormArray.controls;
-                  let i = index
-                "
-                [value]="meals[i].name"
-              >
-                {{ meals[i].name }}
+            <mat-select
+              formArrayName="mealTypes"
+              multiple
+              (selectionChange)="onMealTypesChange($event)"
+            >
+              <mat-option *ngFor="let meal of meals" [value]="meal.name">
+                {{ meal.name }}
               </mat-option>
             </mat-select>
           </mat-form-field>
@@ -195,12 +193,17 @@
         <div class="form-group col-md-6">
           <mat-form-field appearance="fill">
             <mat-label>Room Types</mat-label>
-            <mat-select formArrayName="roomTypes" multiple>
+            <mat-select
+              formArrayName="roomTypes"
+              multiple
+              (selectionChange)="onRoomTypesChange($event)"
+            >
               <mat-option
                 *ngFor="let roomType of roomTypes"
                 [value]="roomType.name"
-                >{{ roomType.name }}</mat-option
               >
+                {{ roomType.name }}
+              </mat-option>
             </mat-select>
           </mat-form-field>
         </div>
@@ -304,21 +307,21 @@
       </div>
 
       <div class="form-row">
-        <div class="form-group col-md-6">
-          <!-- Price Range -->
-          <div formGroupName="priceRange">
+        <!-- Price Range Group -->
+        <div formGroupName="priceRange" class="form-row">
+          <div class="form-group col-md-6">
             <mat-form-field appearance="fill">
               <mat-label>Min Price</mat-label>
               <input matInput formControlName="minPrice" type="number" />
             </mat-form-field>
           </div>
-        </div>
 
-        <div class="form-group col-md-6">
-          <mat-form-field appearance="fill">
-            <mat-label>Max Price</mat-label>
-            <input matInput formControlName="maxPrice" type="number" />
-          </mat-form-field>
+          <div class="form-group col-md-6">
+            <mat-form-field appearance="fill">
+              <mat-label>Max Price</mat-label>
+              <input matInput formControlName="maxPrice" type="number" />
+            </mat-form-field>
+          </div>
         </div>
       </div>
 
