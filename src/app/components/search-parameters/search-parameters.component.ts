@@ -117,7 +117,7 @@ export class SearchParametersComponent implements OnInit {
   private initializeForm(): void {
     this.searchForm = this.fb.group({
       country: ['', Validators.required],
-      departureCity: ['', Validators.required],
+      destinationCities: this.fb.array(this.cities.map((city) => city.label)),
       departureDate: ['', Validators.required],
       returnDate: ['', Validators.required],
       nightsFrom: ['', Validators.required],
@@ -171,10 +171,13 @@ export class SearchParametersComponent implements OnInit {
       console.log('Meal types selection changed:', values);
     });
     this.selectedHotelsFormArray.valueChanges.subscribe((values) => {
-      console.log('Meal types selection changed:', values);
+      console.log('Hotel selection changed:', values);
     });
     this.roomTypesFormArray.valueChanges.subscribe((values) => {
-      console.log('Meal types selection changed:', values);
+      console.log('Room types selection changed:', values);
+    });
+    this.destinationCitiesFormArray.valueChanges.subscribe((values) => {
+      console.log('City selection changed:', values);
     });
   }
 
@@ -201,6 +204,16 @@ export class SearchParametersComponent implements OnInit {
     const values = event.value;
     mealTypesArray.clear();
     values.forEach((value: any) => mealTypesArray.push(this.fb.control(value)));
+  }
+
+  protected onDestinationCitiesChange(event: MatSelectChange): void {
+    const destinationCitiesArray = this.searchForm.get(
+      'destinationCities'
+    ) as FormArray;
+    destinationCitiesArray.clear();
+    event.value.forEach((value: any) =>
+      destinationCitiesArray.push(this.fb.control(value))
+    );
   }
 
   private buildFormArray(items: any[]): FormArray {
@@ -331,6 +344,10 @@ export class SearchParametersComponent implements OnInit {
     return this.searchForm.get('roomTypes') as FormArray;
   }
 
+  get destinationCitiesFormArray(): FormArray {
+    return this.searchForm.get('destinationCities') as FormArray;
+  }
+
   protected buildSearchPayload(): any {
     const formValue = this.searchForm.value;
 
@@ -343,10 +360,13 @@ export class SearchParametersComponent implements OnInit {
     const selectedHotels = this.selectedHotelsFormArray.value;
     const mealTypes = this.mealTypesFormArray.value;
     const roomTypes = this.roomTypesFormArray.value;
+    const destinationCities = this.destinationCitiesFormArray.controls
+      .map((control, i) => (control.value ? this.cities[i].value : null))
+      .filter((v: string | null) => v !== null);
 
     const payload = {
       destinationCountry: formValue.country,
-      departureCity: formValue.departureCity,
+      destinationCities,
       departureDate: formValue.departureDate,
       returnDate: formValue.returnDate,
       nights: {
@@ -380,15 +400,20 @@ export class SearchParametersComponent implements OnInit {
   protected onSubmit(): void {
     if (this.searchForm.valid) {
       const searchPayload = this.buildSearchPayload();
-      console.log('Here is the submit data', this.searchForm.value);
-      console.log('Sending search payload:', searchPayload);
-
       this.scraperService.sendSearchData(searchPayload).subscribe({
-        next: (response) => console.log('Search initiated', response),
-        error: (error) => console.error('Error initiating search:', error),
+        next: (response) => {
+          if (response.success) {
+            console.log('Search success:', response.message);
+          } else {
+            console.error('Search error:', response.message);
+          }
+        },
+        error: (error) => {
+          console.error('Server error:', error.error.message);
+        },
       });
     } else {
-      console.error('Form is not valid:', this.searchForm.errors);
+      console.error('Form validation failed');
     }
   }
 

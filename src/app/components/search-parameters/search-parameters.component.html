@@ -29,12 +29,19 @@
           </mat-form-field>
         </div>
 
-        <!-- Departure City Selector -->
+        <!-- Destination City Selector -->
         <div class="form-group col-md-6">
           <mat-form-field appearance="fill">
-            <mat-label>Destination City</mat-label>
-            <mat-select formControlName="departureCity">
-              <mat-option *ngFor="let city of cities" [value]="city.value">
+            <mat-label>Destination Cities</mat-label>
+            <mat-select
+              formArrayName="destinationCities"
+              multiple
+              (selectionChange)="onDestinationCitiesChange($event)"
+            >
+              <mat-option
+                *ngFor="let city of cities; let i = index"
+                [value]="city.value"
+              >
                 {{ city.label }}
               </mat-option>
             </mat-select>
@@ -159,6 +166,7 @@
           <mat-form-field appearance="fill" class="hotel-dropdown">
             <mat-label>Hotels</mat-label>
             <mat-select
+              #hotelSelect
               formArrayName="selectedHotels"
               multiple
               (selectionChange)="onSelectedHotelsChange($event)"
@@ -213,7 +221,7 @@
       <div class="form-row">
         <div class="form-group col-md-12">
           <mat-form-field appearance="fill" class="filter-dropdown">
-            <mat-label>Filters</mat-label>
+            <mat-label>Filters (IS TEMPORARILY TURNED OFF)</mat-label>
             <mat-select formControlName="filters" multiple>
               <mat-select-trigger>
                 {{
@@ -239,11 +247,7 @@
           <mat-form-field appearance="fill">
             <mat-label>Adults</mat-label>
             <mat-select formControlName="adults">
-              <!-- Generate options dynamically if needed, or use a static list -->
-              <mat-option
-                *ngFor="let number of [1, 2, 3, 4, 5]"
-                [value]="number"
-              >
+              <mat-option *ngFor="let number of [1, 2, 3, 4]" [value]="number">
                 {{ number }}
               </mat-option>
             </mat-select>
@@ -257,10 +261,7 @@
               formControlName="children"
               (selectionChange)="onChildrenCountChanged($event)"
             >
-              <mat-option
-                *ngFor="let number of [0, 1, 2, 3, 4]"
-                [value]="number"
-              >
+              <mat-option *ngFor="let number of [0, 1, 2, 3]" [value]="number">
                 {{ number }}
               </mat-option>
             </mat-select>
@@ -306,22 +307,20 @@
         </ng-container>
       </div>
 
-      <div class="form-row">
-        <!-- Price Range Group -->
-        <div formGroupName="priceRange" class="form-row">
-          <div class="form-group col-md-6">
-            <mat-form-field appearance="fill">
-              <mat-label>Min Price</mat-label>
-              <input matInput formControlName="minPrice" type="number" />
-            </mat-form-field>
-          </div>
+      <!-- Price Range Group -->
+      <div formGroupName="priceRange" class="form-row">
+        <div class="form-group col-md-6">
+          <mat-form-field appearance="fill">
+            <mat-label>Min Price</mat-label>
+            <input matInput formControlName="minPrice" type="number" />
+          </mat-form-field>
+        </div>
 
-          <div class="form-group col-md-6">
-            <mat-form-field appearance="fill">
-              <mat-label>Max Price</mat-label>
-              <input matInput formControlName="maxPrice" type="number" />
-            </mat-form-field>
-          </div>
+        <div class="form-group col-md-6">
+          <mat-form-field appearance="fill">
+            <mat-label>Max Price</mat-label>
+            <input matInput formControlName="maxPrice" type="number" />
+          </mat-form-field>
         </div>
       </div>
 
