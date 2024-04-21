@@ -48,6 +48,16 @@ export class SearchParametersComponent implements OnInit {
   protected nightOptions: number[] = [];
   protected filteredHotels: Hotel[] = [];
   protected countries = [{ label: 'ОАЭ', value: 'uae' }];
+
+  protected tours = [
+    { value: '0', label: '----' },
+    { value: '194', label: 'ОАЭ: block Centrum Air (O01-0A05)' },
+    {
+      value: '215',
+      label: 'ОАЭ: block Centrum Air - Dynamic Price (O01-0A05)',
+    },
+  ];
+
   protected starRatings = [
     { name: '2*', value: '2', selected: false },
     { name: '3*', value: '3', selected: false },
@@ -117,6 +127,7 @@ export class SearchParametersComponent implements OnInit {
   private initializeForm(): void {
     this.searchForm = this.fb.group({
       country: ['', Validators.required],
+      tour: [''],
       destinationCities: this.fb.array(this.cities.map((city) => city.label)),
       departureDate: ['', Validators.required],
       returnDate: ['', Validators.required],
@@ -125,11 +136,15 @@ export class SearchParametersComponent implements OnInit {
       adults: [1, [Validators.required, Validators.min(1)]],
       children: [0, Validators.min(0)],
       childrenAges: this.fb.array([]),
-      hotelStars: this.buildFormArray(this.starRatings),
+      hotelStars: this.buildFormArray(this.starRatings, true),
       selectedHotels: this.fb.array(this.hotels.map((hotel) => hotel.name)),
       hotels: this.buildFormArray([]),
-      roomTypes: this.fb.array(this.roomTypes.map((roomType) => roomType.name)),
-      mealTypes: this.fb.array(this.meals.map((meal) => meal.name)),
+      roomTypes: this.buildFormGroupArray(
+        this.roomTypes.filter((rt) => rt.selected)
+      ),
+      mealTypes: this.fb.array(
+        this.meals.filter((meal) => meal.selected).map((meal) => meal.name)
+      ),
       cities: this.buildFormArray(this.cities),
       priceRange: this.fb.group({
         minPrice: [''],
@@ -158,7 +173,6 @@ export class SearchParametersComponent implements OnInit {
       this.buildFormGroupArray(this.roomTypes)
     );
 
-    this.searchForm.setControl('meals', this.buildFormGroupArray(this.meals));
     this.setInitialChildrenAges(this.searchForm.get('children')?.value);
   }
 
@@ -192,6 +206,16 @@ export class SearchParametersComponent implements OnInit {
     );
   }
 
+  protected onMealTypesChange(event: MatSelectChange): void {
+    const mealTypesArray = this.searchForm.get('mealTypes') as FormArray;
+    mealTypesArray.clear();
+    event.value.forEach((value: string) => {
+      if (value) {
+        mealTypesArray.push(this.fb.control(value));
+      }
+    });
+  }
+
   protected onRoomTypesChange(event: MatSelectChange): void {
     const roomTypesArray = this.searchForm.get('roomTypes') as FormArray;
     const values = event.value;
@@ -199,11 +223,18 @@ export class SearchParametersComponent implements OnInit {
     values.forEach((value: any) => roomTypesArray.push(this.fb.control(value)));
   }
 
-  protected onMealTypesChange(event: MatSelectChange): void {
-    const mealTypesArray = this.searchForm.get('mealTypes') as FormArray;
-    const values = event.value;
-    mealTypesArray.clear();
-    values.forEach((value: any) => mealTypesArray.push(this.fb.control(value)));
+  protected onHotelStarChange(starRating: number, isChecked: boolean): void {
+    const hotelStarsArray = this.searchForm.get('hotelStars') as FormArray;
+    if (isChecked) {
+      hotelStarsArray.push(this.fb.control(starRating));
+    } else {
+      const index = hotelStarsArray.controls.findIndex(
+        (control) => control.value === starRating
+      );
+      if (index !== -1) {
+        hotelStarsArray.removeAt(index);
+      }
+    }
   }
 
   protected onDestinationCitiesChange(event: MatSelectChange): void {
@@ -216,8 +247,21 @@ export class SearchParametersComponent implements OnInit {
     );
   }
 
-  private buildFormArray(items: any[]): FormArray {
-    return this.fb.array(items.map(() => this.fb.control(false)));
+  private buildFormArray(
+    items: any[],
+    useValuesInsteadOfBooleans: boolean = false
+  ): FormArray {
+    return this.fb.array(
+      items.map((item) =>
+        this.fb.control(
+          useValuesInsteadOfBooleans
+            ? item.selected
+              ? item.value
+              : null
+            : false
+        )
+      )
+    );
   }
 
   private buildFormGroupArray(items: any[]): FormArray {
@@ -225,7 +269,7 @@ export class SearchParametersComponent implements OnInit {
       items.map((item) =>
         this.fb.group({
           name: [item.name],
-          selected: [item.selected],
+          selected: [false],
         })
       )
     );
@@ -349,24 +393,14 @@ export class SearchParametersComponent implements OnInit {
   }
 
   protected buildSearchPayload(): any {
-    const formValue = this.searchForm.value;
-
-    const hotelStars = formValue.hotelStars
-      .map((selected: boolean, index: number) =>
-        selected ? this.starRatings[index].value : null
-      )
-      .filter((v: string | null) => v !== null);
-
-    const selectedHotels = this.selectedHotelsFormArray.value;
-    const mealTypes = this.mealTypesFormArray.value;
-    const roomTypes = this.roomTypesFormArray.value;
-    const destinationCities = this.destinationCitiesFormArray.controls
-      .map((control, i) => (control.value ? this.cities[i].value : null))
-      .filter((v: string | null) => v !== null);
+    const formValue = this.sanitizeFormValues(this.searchForm);
+    console.log(formValue.roomTypes);
 
     const payload = {
       destinationCountry: formValue.country,
-      destinationCities,
+      destinationCities: formValue.destinationCities.filter(
+        (city: any) => city
+      ),
       departureDate: formValue.departureDate,
       returnDate: formValue.returnDate,
       nights: {
@@ -375,11 +409,11 @@ export class SearchParametersComponent implements OnInit {
       },
       adults: formValue.adults,
       children: formValue.children,
-      childrenAges: formValue.childrenAges.map((child: any) => child.age),
-      hotelStars,
-      selectedHotels,
-      mealTypes,
-      roomTypes,
+      childrenAges: formValue.childrenAges,
+      hotelStars: formValue.hotelStars.filter((star: null) => star != null),
+      selectedHotels: formValue.selectedHotels,
+      mealTypes: formValue.mealTypes.filter((type: any) => type),
+      roomTypes: formValue.roomTypes,
       priceRange: {
         min: formValue.priceRange.minPrice,
         max: formValue.priceRange.maxPrice,
@@ -387,7 +421,24 @@ export class SearchParametersComponent implements OnInit {
       filters: formValue.filters,
     };
 
+    console.log('payload: ', payload);
     return payload;
+  }
+
+  private sanitizeFormValues(formGroup: FormGroup): any {
+    const result: any = {};
+    Object.keys(formGroup.controls).forEach((key) => {
+      const control = formGroup.get(key);
+      if (control instanceof FormGroup) {
+        result[key] = this.sanitizeFormValues(control);
+      } else if (control instanceof FormArray) {
+        result[key] = control.controls.map((c) => c.value).filter((v) => v);
+      } else {
+        let value = control?.value;
+        result[key] = value == null ? '' : value;
+      }
+    });
+    return result;
   }
 
   private onScrapeHotels(): void {

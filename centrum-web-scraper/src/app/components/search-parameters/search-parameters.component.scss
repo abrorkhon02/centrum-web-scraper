@@ -16,12 +16,21 @@ body {
   }
 
   .search-form {
-    max-width: 600px;
-    margin: 0 auto;
+    display: flex;
+    flex-direction: row;
+    gap: 5rem;
+    margin: auto;
+    max-width: 80vw;
     background: $color_1;
-    padding: 40px 0px 40px 40px;
+    padding: 3rem;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     border-radius: 8px;
+  }
+
+  .form-block {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
   }
 
   .search-field {
@@ -32,15 +41,9 @@ body {
     width: 100%;
   }
 
+  .form-group.col-md-12,
   .form-group.col-md-6 {
     mat-form-field {
-      width: 14rem;
-    }
-  }
-
-  .form-group.col-md-12 {
-    mat-form-field {
-      padding-right: 3.2rem;
       width: 100%;
     }
   }

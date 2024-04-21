@@ -7,10 +7,26 @@
     "start": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "pkg": {
+    "scripts": [
+      "server.js",
+      "searchData.js"
+    ],
+    "assets": [
+      "frontend/**/*",
+      "assets/**/*"
+    ],
+    "targets": [
+      "node18-linux-x64",
+      "node18-macos-x64",
+      "node18-win-x64"
+    ]
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@yao-pkg/pkg-fetch": "^3.5.9",
     "body-parser": "^1.20.2",
     "cors": "^2.8.5",
     "express": "^4.19.2",

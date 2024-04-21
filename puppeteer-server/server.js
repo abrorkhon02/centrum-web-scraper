@@ -9,28 +9,10 @@ const express = require("express");
 const app = express();
 const port = 3000;
 
-app.use(express.static(path.join(__dirname, "/frontend")));
+app.use(express.static(path.join(__dirname, "./frontend")));
 
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "/frontend/index.html"));
-});
-
-app.use((req, res, next) => {
-  if (req.path.endsWith(".js")) {
-    res.type("text/javascript");
-  } else if (req.path.endsWith(".css")) {
-    res.type("text/css");
-  }
-  next();
-});
-
-app.use((req, res, next) => {
-  if (req.path.endsWith(".js")) {
-    res.type(".js");
-  } else if (req.path.endsWith(".css")) {
-    res.type(".css");
-  }
-  next();
+  res.sendFile(path.join(__dirname, "./frontend/index.html"));
 });
 
 app.set("port", port);
@@ -92,7 +74,7 @@ app.get("/api/scrape-hotels", async (req, res) => {
   await browser.close();
 
   fs.writeFile(
-    "/centrum-web-scraper/src/assets/hotels.json",
+    path.join(__dirname, "assets/hotels.json"),
     JSON.stringify(hotelNames, null, 2),
     (err) => {
       if (err) {
