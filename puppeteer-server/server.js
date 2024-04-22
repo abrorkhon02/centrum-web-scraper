@@ -57,33 +57,29 @@ app.post("/api/search", (req, res) => {
   });
 });
 
-// New endpoint for scraping hotels
+// Endpoint for scraping hotels
 app.get("/api/scrape-hotels", async (req, res) => {
   const browser = await puppeteer.launch();
   const page = await browser.newPage();
   await page.goto("https://online-centrum-holidays.com/search_tour");
   await page.waitForSelector("div.checklistbox.HOTELS label");
+
   const hotelNames = await page.$$eval(
     "div.checklistbox.HOTELS label",
-    (labels) =>
-      labels.map(
-        (label) =>
-          label.getAttribute("title")?.trim() || label.textContent.trim()
-      )
+    (labels) => labels.map((label) => label.textContent.trim())
   );
+
   await browser.close();
 
-  fs.writeFile(
-    path.join(__dirname, "assets/hotels.json"),
-    JSON.stringify(hotelNames, null, 2),
-    (err) => {
-      if (err) {
-        console.error("Error saving hotel data:", err);
-        res.status(500).send("Error scraping hotels");
-      } else {
-        console.log("Hotel data has been saved!");
-        res.status(200).json(hotelNames);
-      }
+  // Save the scraped data to a JSON file
+  const filePath = path.join(__dirname, "assets/hotels.json");
+  fs.writeFile(filePath, JSON.stringify(hotelNames, null, 2), (err) => {
+    if (err) {
+      console.error("Error saving hotel data:", err);
+      res.status(500).send("Error scraping hotels");
+    } else {
+      console.log(`Hotel data has been saved to ${filePath}`);
+      res.status(200).json(hotelNames);
     }
-  );
+  });
 });

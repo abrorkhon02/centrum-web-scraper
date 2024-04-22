@@ -169,13 +169,13 @@
               color="primary"
               (click)="checkAllHotels(); $event.preventDefault()"
             >
-              Check All
+              Any Hotel
             </button>
             <button
               mat-button
               (click)="uncheckAllHotels(); $event.preventDefault()"
             >
-              Uncheck All
+              Enable Hotel Dropdown
             </button>
           </div>
         </div>
@@ -190,6 +190,7 @@
                 formArrayName="selectedHotels"
                 multiple
                 (selectionChange)="onSelectedHotelsChange($event)"
+                [disabled]="isHotelDropdownDisabled"
               >
                 <mat-option
                   *ngFor="let hotel of filteredHotels"

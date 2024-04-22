@@ -5,7 +5,7 @@ import {
   MatSelectModule,
 } from '@angular/material/select';
 import { MatDatepickerModule } from '@angular/material/datepicker';
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, ViewChild } from '@angular/core';
 import {
   FormBuilder,
   FormGroup,
@@ -21,6 +21,11 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { ScraperService } from '../../services/scraper.service';
+
+interface TourType {
+  value: string;
+  label: string;
+}
 
 @Component({
   selector: 'app-search-parameters',
@@ -43,20 +48,69 @@ import { ScraperService } from '../../services/scraper.service';
 export class SearchParametersComponent implements OnInit {
   @ViewChild('hotelSelect')
   hotelSelect!: MatSelect;
+  protected isHotelDropdownDisabled: boolean = false;
   protected searchForm!: FormGroup;
   protected hotels: Hotel[] = [];
   protected nightOptions: number[] = [];
   protected filteredHotels: Hotel[] = [];
-  protected countries = [{ label: 'ОАЭ', value: 'uae' }];
-
-  protected tours = [
-    { value: '0', label: '----' },
-    { value: '194', label: 'ОАЭ: block Centrum Air (O01-0A05)' },
+  protected countries = [
+    { label: 'ОАЭ', value: 'uae' },
+    { label: 'Грузия', value: 'georgia' },
+  ];
+  protected uaeTours: TourType[] = [
+    { value: '----', label: '----' },
     {
-      value: '215',
+      value: 'ОАЭ: block Centrum Air (O01-0A05)',
+      label: 'ОАЭ: block Centrum Air (O01-0A05)',
+    },
+    {
+      value: 'ОАЭ: block Centrum Air - Dynamic Price (O01-0A05)',
       label: 'ОАЭ: block Centrum Air - Dynamic Price (O01-0A05)',
     },
   ];
+
+  protected georgianTours: TourType[] = [
+    { value: '----', label: '----' },
+    {
+      value: 'Грузия: block Centrum Air, прилет в Батуми (G01-0A18)',
+      label: 'Грузия: block Centrum Air, прилет в Батуми (G01-0A18)',
+    },
+    {
+      value: 'Грузия: block Centrum Air, прилет в Батуми (G01-0A19)',
+      label: 'Грузия: block Centrum Air, прилет в Батуми (G01-0A19)',
+    },
+    {
+      value: 'Грузия: block Centrum Air, прилет в Тбилиси (G01-0A18)',
+      label: 'Грузия: block Centrum Air, прилет в Тбилиси (G01-0A18)',
+    },
+    {
+      value: 'Грузия: block Centrum Air, прилет в Тбилиси (G01-0A19)',
+      label: 'Грузия: block Centrum Air, прилет в Тбилиси (G01-0A19)',
+    },
+    {
+      value: 'Грузия: лечебный тур, прилет в Батуми (G01-0A18)',
+      label: 'Грузия: лечебный тур, прилет в Батуми (G01-0A18)',
+    },
+    {
+      value: 'Грузия: лечебный тур, прилет в Тбилиси (G01-0A18)',
+      label: 'Грузия: лечебный тур, прилет в Тбилиси (G01-0A18)',
+    },
+  ];
+
+  protected tours: TourType[] = [];
+
+  protected tourNightOptions: { [key: string]: number[] } = {
+    default: Array.from({ length: 31 }, (_, i) => i + 1),
+    'ОАЭ: block Centrum Air (O01-0A05)': [4, 7, 11, 14],
+    '----': Array.from({ length: 14 }, (_, i) => i + 1),
+    'Грузия: ----': [3, 4, 7, 10],
+    'Грузия: block Centrum Air, прилет в Батуми (G01-0A18)': [3, 7, 10, 14],
+    'Грузия: block Centrum Air, прилет в Тбилиси (G01-0A18)': [3, 7, 10, 14],
+    'Грузия: block Centrum Air, прилет в Батуми (G01-0A19)': [3, 7, 10],
+    'Грузия: block Centrum Air, прилет в Тбилиси (G01-0A19)': [3, 7, 10],
+    'Грузия: лечебный тур, прилет в Батуми (G01-0A18)': [3, 7, 10],
+    'Грузия: лечебный тур, прилет в Тбилиси (G01-0A18)': [3, 7, 10],
+  };
 
   protected starRatings = [
     { name: '2*', value: '2', selected: false },
@@ -78,7 +132,9 @@ export class SearchParametersComponent implements OnInit {
     { name: 'Все', selected: false },
   ];
 
-  protected cities = [
+  protected cities: any[] = [];
+
+  protected uaecities = [
     { label: 'Абу-Даби', value: 'abu-dhabi' },
     { label: 'Аджман', value: 'ajman' },
     { label: 'Дубай', value: 'dubai' },
@@ -86,6 +142,39 @@ export class SearchParametersComponent implements OnInit {
     { label: 'Рас-аль-Хайма', value: 'ras-al-khaimah' },
     { label: 'Шарджа', value: 'sharjah' },
     { label: 'Умм-аль-Кувейн', value: 'umm-al-quwain' },
+  ];
+
+  protected georgiancities = [
+    { label: 'Аджария', value: '1845' },
+    { label: 'Батуми', value: '1837' },
+    { label: 'Чакви', value: '1841' },
+    { label: 'Гонио', value: '2156' },
+    { label: 'Кобулети', value: '2671' },
+    { label: 'Квариати', value: '2157' },
+    { label: 'Мцване Концхи', value: '2669' },
+    { label: 'Квишхети', value: '2683' },
+    { label: 'Уреки', value: '2159' },
+    { label: 'Гудаури', value: '2121' },
+    { label: 'Гурджаани', value: '2687' },
+    { label: 'Вазисубани', value: '2686' },
+    { label: 'Кутаиси', value: '2127' },
+    { label: 'Саирме', value: '2134' },
+    { label: 'Цхалтубо', value: '2142' },
+    { label: 'Казбеги', value: '2123' },
+    { label: 'Кварели', value: '2677' },
+    { label: 'Лагодехи', value: '2689' },
+    { label: 'Мцхета', value: '2688' },
+    { label: 'Местиа', value: '2672' },
+    { label: 'Зугдиди', value: '2122' },
+    { label: 'Ахалцихе', value: '2690' },
+    { label: 'Бакуриани', value: '2118' },
+    { label: 'Боржоми', value: '2119' },
+    { label: 'Шекветили', value: '2673' },
+    { label: 'Сити Центр', value: '2662' },
+    { label: 'Старый Тбилиси', value: '2666' },
+    { label: 'Тбилиси', value: '1843' },
+    { label: 'Цинандали', value: '2140' },
+    { label: 'Телави', value: '2138' },
   ];
 
   protected filterOptions = [
@@ -103,7 +192,8 @@ export class SearchParametersComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private hotelDataService: HotelDataService,
-    private scraperService: ScraperService
+    private scraperService: ScraperService,
+    private changeDetectorRef: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -111,6 +201,13 @@ export class SearchParametersComponent implements OnInit {
     this.fetchHotels();
     this.initializeFilters();
     this.valueChangesWatcher();
+    this.searchForm.get('tour')?.valueChanges.subscribe(() => {
+      this.adjustNightOptions();
+    });
+    this.searchForm.get('country')?.valueChanges.subscribe(() => {
+      this.updateCities();
+      this.updateTours();
+    });
   }
 
   ngAfterViewInit(): void {
@@ -126,14 +223,16 @@ export class SearchParametersComponent implements OnInit {
 
   private initializeForm(): void {
     this.searchForm = this.fb.group({
+      tour: ['', Validators.required],
       country: ['', Validators.required],
-      tour: [''],
-      destinationCities: this.fb.array(this.cities.map((city) => city.label)),
+      destinationCities: this.fb.array(
+        this.uaecities.map((city) => city.label)
+      ),
       departureDate: ['', Validators.required],
       returnDate: ['', Validators.required],
       nightsFrom: ['', Validators.required],
       nightsTo: ['', Validators.required],
-      adults: [1, [Validators.required, Validators.min(1)]],
+      adults: [2, Validators.min(1)],
       children: [0, Validators.min(0)],
       childrenAges: this.fb.array([]),
       hotelStars: this.buildFormArray(this.starRatings, true),
@@ -145,17 +244,12 @@ export class SearchParametersComponent implements OnInit {
       mealTypes: this.fb.array(
         this.meals.filter((meal) => meal.selected).map((meal) => meal.name)
       ),
-      cities: this.buildFormArray(this.cities),
+      cities: this.buildFormArray(this.uaecities),
       priceRange: this.fb.group({
         minPrice: [''],
         maxPrice: [''],
       }),
       filters: [],
-    });
-    this.nightOptions = [3, 4, 7, 10, 11, 14];
-    this.searchForm.patchValue({
-      nightsFrom: this.nightOptions[0],
-      nightsTo: this.nightOptions[0],
     });
     this.searchForm.setControl(
       'selectedHotels',
@@ -166,32 +260,64 @@ export class SearchParametersComponent implements OnInit {
       this.buildFormArray(this.starRatings)
     );
     this.searchForm.setControl('hotels', this.buildFormArray([]));
-    this.searchForm.setControl('cities', this.buildFormArray(this.cities));
+    this.searchForm.setControl('cities', this.buildFormArray(this.uaecities));
     this.searchForm.setControl('meals', this.buildFormGroupArray(this.meals));
     this.searchForm.setControl(
       'roomTypes',
       this.buildFormGroupArray(this.roomTypes)
     );
-
     this.setInitialChildrenAges(this.searchForm.get('children')?.value);
   }
 
-  private valueChangesWatcher(): void {
-    this.hotelStarsFormArray.valueChanges.subscribe((values) => {
-      console.log('Star ratings changed:', values);
-      this.filterHotelsByStarRating(values);
-    });
-    this.mealTypesFormArray.valueChanges.subscribe((values) => {
-      console.log('Meal types selection changed:', values);
-    });
-    this.selectedHotelsFormArray.valueChanges.subscribe((values) => {
-      console.log('Hotel selection changed:', values);
-    });
-    this.roomTypesFormArray.valueChanges.subscribe((values) => {
-      console.log('Room types selection changed:', values);
-    });
-    this.destinationCitiesFormArray.valueChanges.subscribe((values) => {
-      console.log('City selection changed:', values);
+  private updateTours(): void {
+    const country = this.searchForm.get('country')?.value;
+    if (country === 'uae') {
+      this.tours = this.uaeTours;
+    } else if (country === 'georgia') {
+      this.tours = this.georgianTours;
+    }
+    this.refreshTourSelector();
+    this.adjustNightOptions();
+  }
+
+  private refreshTourSelector(): void {
+    const tourControl = this.searchForm.get('tour');
+    tourControl?.setValue('----');
+  }
+
+  private adjustNightOptions(): void {
+    const selectedTour = this.searchForm.get('tour')?.value as string;
+    const country = this.searchForm.get('country')?.value as string;
+
+    let nightOptionsKey = selectedTour;
+    if (selectedTour === '----' && country === 'georgia') {
+      nightOptionsKey = 'Грузия: ----';
+    }
+
+    this.nightOptions =
+      this.tourNightOptions[nightOptionsKey] ||
+      this.tourNightOptions['default'];
+    this.searchForm.get('nightsFrom')?.setValue(this.nightOptions[0]);
+    this.searchForm
+      .get('nightsTo')
+      ?.setValue(this.nightOptions[this.nightOptions.length - 1]);
+  }
+
+  private updateCities(): void {
+    const country = this.searchForm.get('country')?.value;
+    if (country === 'uae') {
+      this.cities = this.uaecities;
+    } else if (country === 'georgia') {
+      this.cities = this.georgiancities;
+    }
+    this.refreshCitySelector();
+  }
+
+  private refreshCitySelector(): void {
+    const cityControl = this.searchForm.get('destinationCities') as FormArray;
+    cityControl.clear();
+    this.cities.forEach((city) => {
+      cityControl.push(this.fb.control(city.value));
     });
   }
 
@@ -218,9 +344,18 @@ export class SearchParametersComponent implements OnInit {
 
   protected onRoomTypesChange(event: MatSelectChange): void {
     const roomTypesArray = this.searchForm.get('roomTypes') as FormArray;
-    const values = event.value;
     roomTypesArray.clear();
-    values.forEach((value: any) => roomTypesArray.push(this.fb.control(value)));
+    event.value.forEach((selectedValue: string) => {
+      const roomType = this.roomTypes.find((rt) => rt.name === selectedValue);
+      if (roomType && roomType.selected) {
+        roomTypesArray.push(
+          this.fb.group({
+            name: this.fb.control(roomType.name),
+            selected: this.fb.control(true),
+          })
+        );
+      }
+    });
   }
 
   protected onHotelStarChange(starRating: number, isChecked: boolean): void {
@@ -335,21 +470,24 @@ export class SearchParametersComponent implements OnInit {
   }
 
   protected checkAllHotels(): void {
-    const hotelsFormArray = this.searchForm.get('hotels') as FormArray;
-    this.hotels.forEach((hotel, index) => {
-      hotel.selected = true;
-      hotelsFormArray.at(index).setValue(true);
-    });
+    const selectedHotelsControl = this.hotelSelect;
+    this.isHotelDropdownDisabled = true;
+    selectedHotelsControl.writeValue([]);
+    const selectedHotelsFormArray = this.searchForm.get(
+      'selectedHotels'
+    ) as FormArray;
+    selectedHotelsFormArray.clear();
   }
 
   protected uncheckAllHotels(): void {
+    const selectedHotelsControl = this.hotelSelect;
+    this.isHotelDropdownDisabled = false;
     const hotelsFormArray = this.searchForm.get('hotels') as FormArray;
-    this.hotels.forEach((hotel, index) => {
-      hotel.selected = false;
-      hotelsFormArray.at(index).setValue(false);
+    hotelsFormArray.clear();
+    this.hotels.forEach((_) => {
+      hotelsFormArray.push(this.fb.control(false));
     });
   }
-
   private setInitialChildrenAges(count: number): void {
     const childrenAgesArray = this.searchForm.get('childrenAges') as FormArray;
     childrenAgesArray.clear();
@@ -419,6 +557,7 @@ export class SearchParametersComponent implements OnInit {
         max: formValue.priceRange.maxPrice,
       },
       filters: formValue.filters,
+      tourType: formValue.tour,
     };
 
     console.log('payload: ', payload);
@@ -432,7 +571,9 @@ export class SearchParametersComponent implements OnInit {
       if (control instanceof FormGroup) {
         result[key] = this.sanitizeFormValues(control);
       } else if (control instanceof FormArray) {
-        result[key] = control.controls.map((c) => c.value).filter((v) => v);
+        result[key] = control.controls
+          .filter((c) => c.value.selected)
+          .map((c) => c.value.name);
       } else {
         let value = control?.value;
         result[key] = value == null ? '' : value;
@@ -470,5 +611,25 @@ export class SearchParametersComponent implements OnInit {
 
   protected onReset(): void {
     this.searchForm.reset();
+    window.location.reload();
+  }
+
+  private valueChangesWatcher(): void {
+    this.hotelStarsFormArray.valueChanges.subscribe((values) => {
+      console.log('Star ratings changed:', values);
+      this.filterHotelsByStarRating(values);
+    });
+    this.mealTypesFormArray.valueChanges.subscribe((values) => {
+      console.log('Meal types selection changed:', values);
+    });
+    this.selectedHotelsFormArray.valueChanges.subscribe((values) => {
+      console.log('Hotel selection changed:', values);
+    });
+    this.roomTypesFormArray.valueChanges.subscribe((values) => {
+      console.log('Room types selection changed:', values);
+    });
+    this.destinationCitiesFormArray.valueChanges.subscribe((values) => {
+      console.log('City selection changed:', values);
+    });
   }
 }

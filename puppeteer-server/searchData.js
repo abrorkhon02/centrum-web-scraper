@@ -54,6 +54,7 @@ function getCityNames(cityValues) {
     roomTypes,
     priceRange,
     filters,
+    tourType,
   } = JSON.parse(process.env.SEARCH_PARAMS);
 
   const cityNames = getCityNames(destinationCities);
@@ -79,19 +80,19 @@ function getCityNames(cityValues) {
     const nightsTillDropdownSelector = ".NIGHTS_TILL_chosen a";
     const nightsTillOptionSelector = ".NIGHTS_TILL_chosen .chosen-results li";
 
-    async function selectDepartureCity(city) {
-      await page.click(departureCitySelector);
+    async function selectTour(tour) {
+      await page.click(tourSelector);
       await page.waitForSelector(".chosen-drop .chosen-results .active-result");
       await delay(500);
 
-      await page.evaluate((city) => {
+      await page.evaluate((tour) => {
         const options = Array.from(
           document.querySelectorAll(
             ".chosen-drop .chosen-results .active-result"
           )
         );
-        const targetOption = options.find(
-          (option) => option.textContent.trim() === city
+        const targetOption = options.find((option) =>
+          option.textContent.trim().includes(tour)
         );
         if (targetOption) {
           targetOption.dispatchEvent(
@@ -102,7 +103,42 @@ function getCityNames(cityValues) {
           );
           targetOption.click();
         }
-      }, city);
+      }, tour);
+      await delay(3000);
+    }
+
+    async function selectDepartureCity(city) {
+      try {
+        await page.click(departureCitySelector);
+        await page.waitForSelector(
+          ".chosen-drop .chosen-results .active-result"
+        );
+        await delay(500);
+
+        await page.evaluate((city) => {
+          const options = Array.from(
+            document.querySelectorAll(
+              ".chosen-drop .chosen-results .active-result"
+            )
+          );
+          const targetOption = options.find(
+            (option) => option.textContent.trim() === city
+          );
+          if (targetOption) {
+            targetOption.dispatchEvent(
+              new MouseEvent("mousedown", { bubbles: true, cancelable: true })
+            );
+            targetOption.dispatchEvent(
+              new MouseEvent("mouseup", { bubbles: true, cancelable: true })
+            );
+            targetOption.click();
+          } else {
+            console.error(`Failed to find option for city: ${city}`);
+          }
+        }, city);
+      } catch (error) {
+        console.error("Error in selectDepartureCity:", error);
+      }
     }
 
     async function selectCountry(country) {
@@ -129,32 +165,6 @@ function getCityNames(cityValues) {
           targetOption.click();
         }
       }, country);
-    }
-
-    async function selectTour(tour) {
-      await page.click(tourSelector);
-      await page.waitForSelector(".chosen-drop .chosen-results .active-result");
-      await delay(500);
-
-      await page.evaluate((tour) => {
-        const options = Array.from(
-          document.querySelectorAll(
-            ".chosen-drop .chosen-results .active-result"
-          )
-        );
-        const targetOption = options.find((option) =>
-          option.textContent.trim().includes(tour)
-        );
-        if (targetOption) {
-          targetOption.dispatchEvent(
-            new MouseEvent("mousedown", { bubbles: true, cancelable: true })
-          );
-          targetOption.dispatchEvent(
-            new MouseEvent("mouseup", { bubbles: true, cancelable: true })
-          );
-          targetOption.click();
-        }
-      }, tour);
     }
 
     async function setDepartureDate(date) {
@@ -454,7 +464,7 @@ function getCityNames(cityValues) {
           );
         }
 
-        await delay(100);
+        await delay(500);
       }
     }
 
@@ -621,34 +631,34 @@ function getCityNames(cityValues) {
     }
 
     try {
+      if (tourType) await selectTour(tourType);
       await selectDepartureCity("Ташкент");
-      await selectCountry("ОАЭ");
-      await setDepartureDate(formatDate(departureDate));
-      await selectNightsFrom(nights.from.toString());
-      await setReturnDate(formatDate(returnDate));
-      await selectNightsTill(nights.to.toString());
-      await selectNumberOfAdults(adults.toString());
+      if (destinationCountry) await selectCountry(destinationCountry);
+      if (departureDate) await setDepartureDate(formatDate(departureDate));
+      if (nights && nights.from !== null)
+        await selectNightsFrom(nights.from.toString());
+      if (returnDate) await setReturnDate(formatDate(returnDate));
+      if (nights && nights.to !== null)
+        await selectNightsTill(nights.to.toString());
+      if (adults !== null) await selectNumberOfAdults(adults.toString());
       await setCurrencyToUSD(page);
-      if (priceRange.min !== null) {
+      if (priceRange && priceRange.min !== null)
         await setMinimumPrice(priceRange.min.toString());
-      }
-      if (priceRange.max !== null) {
+      if (priceRange && priceRange.max !== null)
         await setMaxCost(priceRange.max.toString());
-      }
-      if (children !== null) {
-        await selectNumberOfChildren(children);
-      }
-      if (childrenAges.length !== 0) {
+      if (children !== null) await selectNumberOfChildren(children);
+      if (childrenAges && childrenAges.length !== 0)
         await setChildrenAges(childrenAges);
+      if (cityNames && cityNames.length !== 0) await selectCity(cityNames);
+      if (hotelStars.length !== 0) await selectHotelStars(hotelStars);
+      if (selectedHotels && selectedHotels.length !== 0)
+        await selectHotels(selectedHotels.filter(Boolean));
+      if (mealTypes && mealTypes.length !== 0) await selectMealTypes(mealTypes);
+      if (roomTypes && roomTypes.length !== 0) await selectRoomTypes(roomTypes);
+      if (filters && filters.length !== 0) {
+        await setFiltersByLabel(filters);
+        if (cityNames) await selectCity(cityNames);
       }
-      await selectCity(cityNames);
-      await selectHotelStars(hotelStars);
-      await selectHotels(selectedHotels.filter(Boolean));
-      await selectMealTypes(mealTypes);
-      await selectRoomTypes(roomTypes);
-      // if (filters !== null) {
-      //   await setFiltersByLabel(filters);
-      // }
       await clickSearchButton();
     } catch (operationError) {
       console.error(`Error during operation: ${operationError.message}`);
@@ -661,7 +671,12 @@ function getCityNames(cityValues) {
       { timeout: 20000 }
     );
 
-    // Scrape the data
+    //                        //
+    //                        //
+    //   DATA SCRAPING HERE   //
+    //                        //
+    //                        //
+
     const data = await page.evaluate(() => {
       const rows = Array.from(
         document.querySelectorAll(".resultset .res tbody tr")
