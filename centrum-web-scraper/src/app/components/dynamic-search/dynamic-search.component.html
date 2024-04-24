@@ -1,0 +1,19 @@
+<!-- dynamic-search.component.html -->
+<div class="container">
+  <h2>Select a Webpage to Start</h2>
+  <form (submit)="startInteraction()">
+    <div class="form-group">
+      <label for="webpage-selector">Webpage:</label>
+      <select
+        class="form-control"
+        [(ngModel)]="selectedWebpage"
+        name="webpage-selector"
+      >
+        <option *ngFor="let webpage of webpages" [value]="webpage.url">
+          {{ webpage.name }}
+        </option>
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Start</button>
+  </form>
+</div>

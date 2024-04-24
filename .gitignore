@@ -18,3 +18,9 @@ Desktop.ini
 
 # Environment variables
 .env
+
+#Chromium local
+chromium
+
+#Dist Frontend
+frontend
