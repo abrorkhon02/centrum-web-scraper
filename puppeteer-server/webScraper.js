@@ -26,47 +26,84 @@ class WebScraper {
     this.url = url;
     const page = await this.browser.newPage();
     await page.setViewport({ width: 1366, height: 768 });
+    let allData = [];
+    let errorOccurred = null;
+    let destination;
+
     try {
       await this.ensurePageLoad(page, this.url);
-      let allData = [];
-      await this.handlePageScraping(page, this.url);
+      destination = await this.handlePageScraping(page);
+
       let currentPageNum = 1;
-      let lastPageNum = 0;
+      let lastPageNum = await this.findLastPageNumber(page);
+
       do {
         const newData = await this.extractData(page, this.url);
         allData = allData.concat(newData);
-        const pagesInfo = await this.findPagerInfo(page);
-        currentPageNum = pagesInfo.currentPageNum;
-        lastPageNum = pagesInfo.lastPageNum;
         console.log(`Currently on page ${currentPageNum} of ${lastPageNum}`);
-        if (currentPageNum < lastPageNum) {
-          try {
-            await this.goToNextPage(page, currentPageNum + 1);
-          } catch (error) {
-            console.error(`Error going to next page: ${error}`);
-            break;
-          }
-        }
-      } while (currentPageNum < lastPageNum);
 
-      return allData;
+        if (currentPageNum >= lastPageNum) {
+          console.log("Reached the last page or there's a single page.");
+          break;
+        }
+
+        currentPageNum++;
+        await this.goToNextPage(page, currentPageNum);
+        lastPageNum = await this.findLastPageNumber(page); // Refresh last page number
+      } while (currentPageNum <= lastPageNum);
     } catch (error) {
       console.error("Error during page navigation and scraping:", error);
-      throw error;
+      errorOccurred = error;
     } finally {
       await page.close();
     }
+
+    if (errorOccurred) {
+      return {
+        error: `An error occurred during scraping: ${errorOccurred}`,
+        data: allData,
+        destination,
+        partialSuccess: true,
+      };
+    }
+
+    return {
+      error: null,
+      data: allData,
+      destination,
+      partialSuccess: false,
+    };
+  }
+
+  async findLastPageNumber(page) {
+    return page.evaluate(() => {
+      const pageElements = Array.from(
+        document.querySelectorAll(".pager .page")
+      );
+      const pageNumbers = pageElements.map((el) =>
+        parseInt(el.getAttribute("data-page"), 10)
+      );
+
+      if (pageNumbers.length === 0) return 1;
+
+      const lastPageNum = Math.max(...pageNumbers);
+      return lastPageNum;
+    });
   }
 
   async findPagerInfo(page) {
     return page.evaluate(() => {
       const pager = document.querySelector(".pager");
       if (pager) {
-        const currentPageElement = pager.querySelector(".current_page");
+        const currentPageElement = document.querySelector(
+          ".pager .current_page"
+        );
         const currentPageNum = currentPageElement
           ? parseInt(currentPageElement.textContent, 10)
           : 1;
-        const pageElements = Array.from(pager.querySelectorAll(".page"));
+        const pageElements = Array.from(
+          document.querySelectorAll(".pager .page")
+        );
         const lastPageNum = pageElements.length
           ? Math.max(...pageElements.map((el) => parseInt(el.textContent, 10)))
           : 1;
@@ -77,12 +114,19 @@ class WebScraper {
   }
 
   async goToNextPage(page, nextPageNum) {
-    const nextPageButtonSelector = `.pager .page[data-page="${nextPageNum}"]`;
-    if (await page.$(nextPageButtonSelector)) {
-      await Promise.all([
-        page.waitForNavigation({ waitUntil: "networkidle0" }),
-        page.click(nextPageButtonSelector),
-      ]);
+    try {
+      await delay(500);
+      console.log("Deciding to go the next page or not");
+      const nextPageButtonSelector = `.pager .page[data-page="${nextPageNum}"]`;
+      if (await page.$(nextPageButtonSelector, { visible: true })) {
+        await page.click(nextPageButtonSelector);
+        await page.waitForSelector(nextPageButtonSelector, { hidden: true });
+      } else {
+        throw new Error("break while changing pages");
+      }
+    } catch (error) {
+      console.error(`Error while navigating to page ${nextPageNum}: ${error}`);
+      throw error;
     }
   }
 
@@ -133,28 +177,43 @@ class WebScraper {
     }
   }
 
-  async handlePageScraping(page, url) {
+  async handlePageScraping(page) {
     console.log("Setting up button click listener and waiting for user click");
-    const buttonClicked = await page.evaluate(() => {
+    await page.evaluate(() => {
       return new Promise((resolve, reject) => {
         const searchButton = document.querySelector(".load.right");
-        if (!searchButton) {
-          reject("Search button not found");
-        }
+        if (!searchButton) reject("Search button not found");
+
         searchButton.addEventListener("click", () => {
           console.log("Search button was clicked");
           resolve();
         });
       });
     });
-    await buttonClicked;
-    console.log("Button click detected, now looking for result set");
 
-    return await this.waitForResults(page);
+    console.log("Button click detected, now looking for result set");
+    await this.waitForResults(page);
+    console.log("Result set has loaded, scraping destination");
+
+    const destination = await this.scrapeDestination(page);
+    console.log(`Destination scraped: ${destination}`);
+
+    return destination;
+  }
+
+  async scrapeDestination(page) {
+    return await page.evaluate(() => {
+      const selectedDestination = document.querySelector(
+        ".STATEINC_chosen .chosen-single span"
+      );
+      return selectedDestination
+        ? selectedDestination.textContent.trim()
+        : undefined;
+    });
   }
 
   async waitForResults(page) {
-    for (let attempts = 0; attempts < 5; attempts++) {
+    for (let attempts = 0; attempts < 10; attempts++) {
       try {
         await page.waitForSelector(".resultset .res", {
           visible: true,

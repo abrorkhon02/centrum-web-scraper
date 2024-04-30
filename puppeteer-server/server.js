@@ -33,24 +33,35 @@ app.get("*", (req, res) => {
 });
 
 app.post("/api/start-session", async (req, res) => {
-  const { url } = req.body;
-  console.log("url страницы:" + url);
+  const url = req.body.url;
 
   try {
     await scraper.launchBrowser();
-    const allData = await scraper.navigateAndScrape(url);
+    const scrapeResult = await scraper.navigateAndScrape(url);
     await scraper.closeBrowser();
 
-    if (allData.length === 0) {
+    if (scrapeResult.error) {
+      console.error(scrapeResult.error);
+      res.status(500).send({
+        success: false,
+        message: `Scraping completed with errors: ${scrapeResult.error}`,
+      });
+      return;
+    }
+
+    if (scrapeResult.data.length === 0) {
       throw new Error("No data found on the page.");
     }
 
     await excelManager.loadTemplate();
-    const worksheet = excelManager.getWorksheet("Исходник сравнение.");
-    allData.forEach((data) => {
-      excelManager.insertData(worksheet, data);
+    const worksheet = excelManager.getWorksheet(1);
+    scrapeResult.data.forEach((data) => {
+      console.log("Data received for insertion:", data);
+      excelManager.insertData(worksheet, data, scrapeResult.destination);
     });
-    const outputPath = await excelManager.saveWorkbook("output.xlsx");
+    const outputPath = await excelManager.saveWorkbook(
+      `output_${scrapeResult.destination || "no_destination"}.xlsx`
+    );
 
     exec(`start excel "${outputPath}"`, (error) => {
       if (error) {
@@ -63,15 +74,16 @@ app.post("/api/start-session", async (req, res) => {
       }
       res.send({
         success: true,
-        message: "Data scraped successfully and saved to Excel.",
+        message: "Data scraped and saved to Excel successfully.",
         filePath: outputPath,
+        partialSuccess: scrapeResult.partialSuccess,
       });
     });
   } catch (error) {
     console.error("Failed to scrape data:", error);
     res.status(500).send({
       success: false,
-      message: "Failed to scrape data or populate Excel.",
+      message: `Failed to scrape data: ${error.message}`,
     });
   }
 });

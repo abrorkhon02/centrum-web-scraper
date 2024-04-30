@@ -28,15 +28,13 @@ class ExcelManager {
     return this.workbook.getWorksheet(name);
   }
 
-  insertData(worksheet, data) {
+  insertData(worksheet, data, destination) {
+    const weekDays = this.getWeekDaysByDestination(destination);
     const formattedDate = this.formatDate(data.date);
     console.log(`Formatted date for entry: ${formattedDate}`);
-    const dateCol = 2;
-    const priceStartCol = 3;
-    const roomTypeCol = 9;
-    if (this.alreadyExists(data.hotel, formattedDate)) {
+    if (this.alreadyExists(data.hotel, formattedDate, data.price)) {
       console.log(
-        `Cheapest offer for hotel ${data.hotel} on ${formattedDate} is already inserted.`
+        `Cheaper or equal offer for hotel ${data.hotel} on ${formattedDate} is already inserted.`
       );
       return;
     }
@@ -44,47 +42,98 @@ class ExcelManager {
     if (!hotelRow) {
       hotelRow = this.findOrAddHotelRow(worksheet, data.hotel);
       this.hotelRowsMap.set(data.hotel, hotelRow);
+      if (hotelRow) {
+        this.populateDates(worksheet, hotelRow, data.date, weekDays);
+        this.processRow(worksheet, hotelRow, data, 2, 3, 9); // B for date, C-H for prices, I for room type
+      }
+    } else {
+      this.populateDates(worksheet, hotelRow, data.date, weekDays);
+      this.processRow(worksheet, hotelRow, data, 2, 3, 9); // B for date, C-H for prices, I for room type
     }
 
-    if (hotelRow) {
-      this.processRow(
-        worksheet,
-        hotelRow,
-        data,
-        dateCol,
-        priceStartCol,
-        roomTypeCol
-      );
-    } else {
-      console.log(
-        `Unable to find or create a row for hotel: ${data.hotel}, adding in next available 8 row block`
-      );
-      this.addNewHotelBlock(worksheet, data.hotel);
-    }
     this.addToInsertedData(data.hotel, formattedDate, data.price);
   }
 
-  alreadyExists(hotel, date) {
-    return this.insertedData.has(`${hotel}-${date}`);
+  populateDates(worksheet, hotelRow, startDate, weekDays) {
+    let currentDate = this.parseDate(startDate);
+    let datesAdded = 0;
+
+    while (datesAdded < 8) {
+      if (weekDays.includes(currentDate.getUTCDay())) {
+        const formattedDate = `${currentDate
+          .getUTCDate()
+          .toString()
+          .padStart(2, "0")}.${(currentDate.getUTCMonth() + 1)
+          .toString()
+          .padStart(2, "0")}`;
+        const row = worksheet.getRow(hotelRow.number + datesAdded);
+        row.getCell(2).value = formattedDate;
+        datesAdded++;
+      }
+      currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+    }
+  }
+
+  getWeekDaysByDestination(destination) {
+    if (!destination) {
+      console.error("Destination is undefined!");
+      return [];
+    }
+
+    switch (destination.toLowerCase()) {
+      case "грузия":
+        return [1, 2, 4, 5]; // Monday, Tuesday, Thursday, Friday
+      case "оаэ":
+        return [2, 6]; // Tuesday, Saturday
+      default:
+        return [];
+    }
+  }
+  parseDate(dateInput) {
+    console.log(dateInput);
+    if (dateInput instanceof Date) {
+      return dateInput;
+    }
+
+    if (typeof dateInput === "string") {
+      const dateString = dateInput.split(",")[0].trim();
+      const [day, month, year] = dateString.split(".").map(Number);
+      return new Date(Date.UTC(year, month - 1, day));
+    }
+
+    throw new TypeError("Expected dateInput to be a string or Date object");
+  }
+
+  alreadyExists(hotel, date, newPrice) {
+    const key = `${hotel}-${date}`;
+    if (this.insertedData.has(key)) {
+      return this.insertedData.get(key).price <= newPrice;
+    }
+    return false;
   }
 
   addToInsertedData(hotel, date, price) {
     const key = `${hotel}-${date}`;
-    if (
-      !this.alreadyExists(hotel, date) ||
-      this.insertedData.get(key) > price
-    ) {
-      this.insertedData.set(key, price);
+    if (!this.alreadyExists(hotel, date, price)) {
+      this.insertedData.set(key, { price, hotel });
     }
   }
 
-  formatDate(dateStr) {
-    const parts = dateStr.split(".");
-    if (parts.length < 2) {
-      console.error(`Could not parse date: ${dateStr}`);
-      return "Invalid Date";
+  formatDate(dateValue) {
+    if (dateValue instanceof Date) {
+      return dateValue
+        .toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit" })
+        .replace(/\//g, ".");
+    } else if (typeof dateValue === "string" && dateValue.includes(".")) {
+      const parts = dateValue.split(".");
+      if (parts.length < 2) {
+        console.error(`Could not parse date: ${dateValue}`);
+        return "Invalid Date";
+      }
+      return `${parts[0]}.${parts[1]}`;
+    } else {
+      return "";
     }
-    return `${parts[0]}.${parts[1]}`;
   }
 
   formatDateForExcel(dateStr) {
@@ -94,22 +143,29 @@ class ExcelManager {
   }
 
   processRow(worksheet, hotelRow, data, dateCol, priceStartCol, roomTypeCol) {
-    const formattedDate = this.formatDate(data.date);
-    const excelDate = this.formatDateForExcel(formattedDate);
+    const formattedInputDate = this.formatDate(data.date);
     let inserted = false;
 
     for (let i = 0; i < 8; i++) {
       const row = worksheet.getRow(hotelRow.number + i);
-      const rowRoomType = row.getCell(roomTypeCol).value;
-      const rowPrice = row.getCell(priceStartCol + data.aggregatorIndex).value;
+      const cellValue = row.getCell(dateCol).value;
+      const formattedCellValue = this.formatDate(cellValue);
+      console.log("Hotel block values: ", cellValue, formattedCellValue);
 
-      if (!rowRoomType || !rowPrice) {
-        console.log(`Inserting or updating data at row ${row.number}`);
-        row.getCell(dateCol).value = excelDate;
-        row.getCell(dateCol).numFmt = "DD.MM";
-        row.getCell(priceStartCol + data.aggregatorIndex).value = data.price;
-        row.getCell(roomTypeCol).value = data.roomType;
-        inserted = true;
+      if (formattedCellValue === formattedInputDate) {
+        const currentPrice = row.getCell(
+          priceStartCol + data.aggregatorIndex
+        ).value;
+        if (!currentPrice || data.price < currentPrice) {
+          console.log(`Inserting or updating data at row ${row.number}`);
+          row.getCell(dateCol).value = new Date(
+            formattedInputDate.split(".").reverse().join("-")
+          );
+          row.getCell(dateCol).numFmt = "DD.MM";
+          row.getCell(priceStartCol + data.aggregatorIndex).value = data.price;
+          row.getCell(roomTypeCol).value = data.roomType;
+          inserted = true;
+        }
         break;
       }
     }
@@ -237,18 +293,16 @@ class ExcelManager {
     const hotelCol = 1;
     let emptyRow = this.findNextEmptyHotelBlock(worksheet);
 
-    if (emptyRow === -1) {
+    if (emptyRow !== -1) {
+      const newRow = worksheet.getRow(emptyRow);
+      newRow.getCell(1).value = hotelName;
+      this.hotelRowsMap.set(hotelName, newRow);
+      console.log(`Added new hotel block at row: ${emptyRow}`);
+      return newRow;
+    } else {
       console.error("No empty hotel block found.");
       return null;
     }
-
-    const newRow = worksheet.getRow(emptyRow);
-    newRow.getCell(hotelCol).value = hotelName;
-    console.log("Added new hotel block at row: " + emptyRow);
-
-    worksheet.mergeCells(emptyRow, hotelCol, emptyRow + 7, hotelCol);
-
-    return newRow;
   }
 
   findNextEmptyHotelBlock(worksheet) {
