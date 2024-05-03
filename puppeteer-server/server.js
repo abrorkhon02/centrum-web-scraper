@@ -55,10 +55,9 @@ app.post("/api/start-session", async (req, res) => {
 
     await excelManager.loadTemplate();
     const worksheet = excelManager.getWorksheet(1);
-    scrapeResult.data.forEach((data) => {
-      console.log("Data received for insertion:", data);
-      excelManager.insertData(worksheet, data, scrapeResult.destination);
-    });
+    let aggregatedData = aggregateData(scrapeResult);
+    processAggregatedData(worksheet, aggregatedData);
+
     const outputPath = await excelManager.saveWorkbook(
       `output_${scrapeResult.destination || "no_destination"}.xlsx`
     );
@@ -87,6 +86,49 @@ app.post("/api/start-session", async (req, res) => {
     });
   }
 });
+
+function aggregateData(scrapedResults) {
+  let hotelOffers = {};
+
+  scrapedResults.data.forEach((entry) => {
+    const hotel = entry.hotel;
+    const date = entry.date.split(",")[0].trim(); // Get the date without the day of the week
+    if (!hotelOffers[hotel]) {
+      hotelOffers[hotel] = {};
+    }
+    if (!hotelOffers[hotel][date]) {
+      hotelOffers[hotel][date] = entry; // Initialize with the first entry
+    } else {
+      if (hotelOffers[hotel][date].price > entry.price) {
+        hotelOffers[hotel][date] = entry;
+      }
+    }
+  });
+
+  // Convert nested objects to arrays of their values for easier processing later
+  Object.keys(hotelOffers).forEach((hotel) => {
+    hotelOffers[hotel] = Object.values(hotelOffers[hotel]).sort((a, b) => {
+      const dateA = new Date(a.date.split(",")[0].trim());
+      const dateB = new Date(b.date.split(",")[0].trim());
+      return dateA - dateB; // Sort by date ascending
+    });
+  });
+
+  console.log("Aggregated data: ", {
+    offers: hotelOffers,
+    destination: scrapedResults.destination,
+  });
+  return { offers: hotelOffers, destination: scrapedResults.destination };
+}
+
+function processAggregatedData(worksheet, aggregatedData) {
+  const { offers, destination } = aggregatedData;
+
+  Object.entries(offers).forEach(([hotel, datesOffers]) => {
+    console.log("Processing all offers for hotel:", hotel);
+    excelManager.insertHotelData(worksheet, hotel, datesOffers, destination);
+  });
+}
 
 const port = 3000;
 const localURL = "http://localhost:";
