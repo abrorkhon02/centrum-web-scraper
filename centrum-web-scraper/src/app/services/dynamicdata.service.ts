@@ -9,7 +9,10 @@ export class DynamicDataService {
 
   constructor(private http: HttpClient) {}
 
-  startPuppeteerSession(webpageUrl: string) {
-    return this.http.post(`${this.baseUrl}/start-session`, { url: webpageUrl });
+  public startPuppeteerSession(formData: FormData) {
+    return this.http.post(`${this.baseUrl}/start-session`, formData, {
+      reportProgress: true,
+      observe: 'events',
+    });
   }
 }

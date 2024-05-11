@@ -28,11 +28,11 @@ class WebScraper {
     await page.setViewport({ width: 1366, height: 768 });
     let allData = [];
     let errorOccurred = null;
-    let destination;
+    let destinationAndStartDate;
 
     try {
       await this.ensurePageLoad(page, this.url);
-      destination = await this.handlePageScraping(page);
+      destinationAndStartDate = await this.handlePageScraping(page);
 
       let currentPageNum = 1;
       let lastPageNum = await this.findLastPageNumber(page);
@@ -55,14 +55,14 @@ class WebScraper {
       console.error("Error during page navigation and scraping:", error);
       errorOccurred = error;
     } finally {
-      await page.close();
+      // await page.close();
     }
 
     if (errorOccurred) {
       return {
         error: `An error occurred during scraping: ${errorOccurred}`,
         data: allData,
-        destination,
+        destinationAndStartDate,
         partialSuccess: true,
       };
     }
@@ -70,67 +70,111 @@ class WebScraper {
     return {
       error: null,
       data: allData,
-      destination,
+      destinationAndStartDate,
       partialSuccess: false,
     };
   }
 
   async findLastPageNumber(page) {
-    return page.evaluate(() => {
-      const pageElements = Array.from(
-        document.querySelectorAll(".pager .page")
-      );
-      const pageNumbers = pageElements.map((el) =>
-        parseInt(el.getAttribute("data-page"), 10)
-      );
+    const nextPageSelector = ".pager .page";
+    const maxRetries = 3;
+    const retryDelay = 2000;
+    let lastKnownPageNumber = 1;
 
-      if (pageNumbers.length === 0) return 1;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`Finding last page number (attempt ${attempt})...`);
 
-      const lastPageNum = Math.max(...pageNumbers);
-      return lastPageNum;
-    });
-  }
+        // Check for the presence of .pager
+        const pager = await page.$(".pager");
+        if (!pager) {
+          console.log("WARNING: No pager found, but still proceeding");
+          // return lastKnownPageNumber;
+        }
 
-  async findPagerInfo(page) {
-    return page.evaluate(() => {
-      const pager = document.querySelector(".pager");
-      if (pager) {
-        const currentPageElement = document.querySelector(
-          ".pager .current_page"
+        await page.waitForSelector(nextPageSelector, {
+          timeout: retryDelay,
+        });
+
+        const lastPageNum = await page.evaluate((selector) => {
+          const pageElements = Array.from(document.querySelectorAll(selector));
+          const pageNumbers = pageElements.map((el) =>
+            parseInt(el.getAttribute("data-page"), 10)
+          );
+
+          if (pageNumbers.length === 0) return 1;
+          return Math.max(...pageNumbers);
+        }, nextPageSelector);
+
+        console.log(`Last page number found: ${lastPageNum}`);
+        lastKnownPageNumber = lastPageNum;
+        return lastPageNum;
+      } catch (error) {
+        console.error(
+          `Error while finding last page number (attempt ${attempt}):`,
+          error
         );
-        const currentPageNum = currentPageElement
-          ? parseInt(currentPageElement.textContent, 10)
-          : 1;
-        const pageElements = Array.from(
-          document.querySelectorAll(".pager .page")
-        );
-        const lastPageNum = pageElements.length
-          ? Math.max(...pageElements.map((el) => parseInt(el.textContent, 10)))
-          : 1;
-        return { currentPageNum, lastPageNum };
+        if (attempt < maxRetries) {
+          console.log(`Retrying in ${retryDelay} ms...`);
+          await delay(retryDelay);
+        } else {
+          console.log(
+            "Falling back to last known page number:",
+            lastKnownPageNumber
+          );
+          return lastKnownPageNumber;
+        }
       }
-      return { currentPageNum: 1, lastPageNum: 1 };
-    });
-  }
-
-  async goToNextPage(page, nextPageNum) {
-    try {
-      await delay(500);
-      console.log("Deciding to go the next page or not");
-      const nextPageButtonSelector = `.pager .page[data-page="${nextPageNum}"]`;
-      if (await page.$(nextPageButtonSelector, { visible: true })) {
-        await page.click(nextPageButtonSelector);
-        await page.waitForSelector(nextPageButtonSelector, { hidden: true });
-      } else {
-        throw new Error("break while changing pages");
-      }
-    } catch (error) {
-      console.error(`Error while navigating to page ${nextPageNum}: ${error}`);
-      throw error;
     }
   }
 
-  async ensurePageLoad(page, url, timeout = 10000) {
+  async goToNextPage(page, nextPageNum) {
+    const maxRetries = 10;
+    let attempt = 0;
+    const retryDelay = 1000;
+
+    while (attempt < maxRetries) {
+      try {
+        console.log(
+          `Navigating to page ${nextPageNum} (attempt ${attempt + 1})...`
+        );
+        const nextPageButtonSelector = `.pager .page[data-page="${nextPageNum}"]`;
+
+        // Click and wait for the next page button
+        const nextPageButton = await page.$(nextPageButtonSelector);
+        if (nextPageButton) {
+          await nextPageButton.click();
+          await page.waitForSelector(nextPageButtonSelector, { hidden: true });
+
+          // Short delay to allow the page to stabilize
+          await delay(500);
+        } else {
+          throw new Error(`Next page button not found for page ${nextPageNum}`);
+        }
+
+        console.log(`Successfully navigated to page ${nextPageNum}.`);
+        return;
+      } catch (error) {
+        attempt += 1;
+        console.error(
+          `Error while navigating to page ${nextPageNum} (attempt ${attempt}):`,
+          error
+        );
+
+        if (attempt < maxRetries) {
+          const delayTime = retryDelay * Math.pow(2, attempt - 1); // Exponential backoff
+          console.log(`Retrying in ${delay / 1000} seconds...`);
+          await delay(delayTime);
+        } else {
+          throw new Error(
+            `Failed to navigate to page ${nextPageNum} after ${maxRetries} attempts`
+          );
+        }
+      }
+    }
+  }
+
+  async ensurePageLoad(page, url, timeout = 20000) {
     try {
       let timeoutHandle;
       const pageLoadPromise = new Promise((resolve, reject) => {
@@ -178,56 +222,150 @@ class WebScraper {
   }
 
   async handlePageScraping(page) {
-    console.log("Setting up button click listener and waiting for user click");
-    await page.evaluate(() => {
-      return new Promise((resolve, reject) => {
-        const searchButton = document.querySelector(".load.right");
-        if (!searchButton) reject("Search button not found");
+    while (true) {
+      if (page.isClosed()) {
+        console.log("Page is closed, exiting scraping loop.");
+        return;
+      }
 
-        searchButton.addEventListener("click", () => {
-          console.log("Search button was clicked");
-          resolve();
-        });
-      });
-    });
+      try {
+        await this.monitorSearchButtonClick(page);
 
-    console.log("Button click detected, now looking for result set");
-    await this.waitForResults(page);
-    console.log("Result set has loaded, scraping destination");
+        if (page.isClosed()) {
+          console.log(
+            "Page closed before waiting for results, exiting scraping loop."
+          );
+          return;
+        }
 
-    const destination = await this.scrapeDestination(page);
-    console.log(`Destination scraped: ${destination}`);
+        await this.waitForResults(page);
 
-    return destination;
+        if (page.isClosed()) {
+          console.log(
+            "Page closed before scraping destination and startDate, exiting scraping loop."
+          );
+          return;
+        }
+
+        const destinationAndStartDate =
+          await this.scrapeDestinationAndStartDate(page);
+        console.log(
+          `Destination scraped: ${destinationAndStartDate.destination}, StartDate scraped: ${destinationAndStartDate.startDate}`
+        );
+        return destinationAndStartDate;
+      } catch (error) {
+        if (page.isClosed()) {
+          console.log(
+            "Page closed during error handling, exiting scraping loop."
+          );
+          return;
+        }
+
+        console.error("Error while handling page scraping:", error);
+        console.log("Refreshing the page to try again...");
+        await page.reload();
+      }
+    }
   }
 
-  async scrapeDestination(page) {
+  async monitorSearchButtonClick(page) {
+    console.log("Monitoring the search button for clicks...");
+
+    while (true) {
+      try {
+        if (page.isClosed()) {
+          console.log("Page is closed, exiting monitoring loop.");
+          return;
+        }
+
+        await page.waitForSelector(".load.right", { timeout: 10000 });
+        console.log("Search button found!");
+
+        await page.evaluate(() => {
+          return new Promise((resolve, reject) => {
+            const searchButton = document.querySelector(".load.right");
+            if (!searchButton) {
+              reject("Search button not found");
+              return;
+            }
+
+            const listener = () => {
+              console.log("Search button was clicked");
+              resolve();
+              searchButton.removeEventListener("click", listener);
+            };
+
+            searchButton.addEventListener("click", listener);
+          });
+        });
+
+        console.log("Search button was clicked, waiting for results...");
+        return;
+      } catch (error) {
+        console.error("Error while monitoring search button:", error);
+        console.log("Retrying to find the search button...");
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+    }
+  }
+
+  async scrapeDestinationAndStartDate(page) {
     return await page.evaluate(() => {
-      const selectedDestination = document.querySelector(
-        ".STATEINC_chosen .chosen-single span"
-      );
-      return selectedDestination
+      // Scrape the destination
+      const destinationSelector = ".STATEINC_chosen .chosen-single span";
+      const selectedDestination = document.querySelector(destinationSelector);
+      const destination = selectedDestination
         ? selectedDestination.textContent.trim()
         : undefined;
+
+      // Scrape the start date from the input field
+      const startDateSelector = 'input[name="CHECKIN_BEG"]';
+      const startDateInput = document.querySelector(startDateSelector);
+      const startDate = startDateInput ? startDateInput.value : undefined;
+
+      return {
+        destination,
+        startDate,
+      };
     });
   }
 
   async waitForResults(page) {
-    for (let attempts = 0; attempts < 10; attempts++) {
+    const resultsSelector = ".resultset .res";
+    const maxRetries = 10;
+    const retryDelay = 4000;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        await page.waitForSelector(".resultset .res", {
+        if (page.isClosed()) {
+          console.log("Page is closed, exiting wait for results.");
+          return;
+        }
+
+        console.log(`Attempt ${attempt}: Waiting for results to load`);
+        await page.waitForSelector(resultsSelector, {
           visible: true,
-          timeout: 5000,
+          timeout: retryDelay * attempt,
         });
+
         console.log("Result set has loaded, moving on to the scraping");
-        return true;
-      } catch {
-        console.log(`Attempt ${attempts + 1}: Waiting for results to load`);
+        return;
+      } catch (error) {
+        if (page.isClosed()) {
+          console.log("Page closed during error, exiting wait for results.");
+          return;
+        }
+
+        console.error(`Attempt ${attempt} failed: ${error}`);
+        if (attempt < maxRetries) {
+          console.log(`Retrying in ${retryDelay} ms...`);
+          await delay(retryDelay);
+        } else {
+          console.error("Exceeded max retries, exiting wait for results.");
+          throw new Error("Failed to wait for results");
+        }
       }
     }
-    throw new Error(
-      "Result set did not load properly after multiple attempts."
-    );
   }
 
   async extractData(page, url) {
@@ -244,9 +382,34 @@ class WebScraper {
         );
         return rows
           .map((row) => {
+            const availabilityElements = Array.from(
+              row.querySelectorAll("td.nw span.hotel_availability")
+            );
+            const availabilityInfo = availabilityElements
+              .map((span) => {
+                if (span.classList.contains("hotel_availability_Y"))
+                  return "ЕМ ";
+                if (span.classList.contains("hotel_availability_N"))
+                  return "НМ ";
+                if (span.classList.contains("hotel_availability_R"))
+                  return "ПЗ ";
+                if (span.classList.contains("hotel_availability_F"))
+                  return "МЛ ";
+              })
+              .join("");
+
+            if (
+              availabilityElements.length === 4 &&
+              availabilityElements.every((span) =>
+                span.classList.contains("hotel_availability_N")
+              )
+            ) {
+              return null;
+            }
+
             const dateCell = row.querySelector("td.sortie");
             const hotelCell = row.querySelector("td.link-hotel");
-            const priceCell = row.querySelector("td.td_price span.price");
+            const priceCell = row.querySelector(".td_price span.price");
             const roomTypeCell = row.querySelector("td:nth-child(8)");
             const priceTypeCell = row.querySelector(
               "td.type_price span.link.all_prices"
@@ -281,6 +444,61 @@ class WebScraper {
       webpages
     );
   }
+
+  // async extractDataOld(page, url) {
+  //   let pageData = await page.evaluate(() => {
+  //     const rows = Array.from(
+  //       document.querySelectorAll(".resultset .res tbody tr")
+  //     );
+  //     return rows
+  //       .map((row) => {
+  //         const cells = row.querySelectorAll("td");
+  //         const priceCell = row.querySelector(".td_price span.price");
+  //         const priceTypeCell = row.querySelector(".type_price span");
+  //         const transportCell = row.querySelector(".transport div");
+
+  //         const availabilityElements = Array.from(
+  //           row.querySelectorAll("td.nw span.hotel_availability")
+  //         );
+  //         const availabilityInfo = availabilityElements
+  //           .map((span) => {
+  //             if (span.classList.contains("hotel_availability_Y")) return "ЕМ ";
+  //             if (span.classList.contains("hotel_availability_N")) return "НМ ";
+  //             if (span.classList.contains("hotel_availability_R")) return "ПЗ ";
+  //             if (span.classList.contains("hotel_availability_F")) return "МЛ ";
+  //           })
+  //           .join("");
+
+  //         if (
+  //           availabilityElements.length === 4 &&
+  //           availabilityElements.every((span) =>
+  //             span.classList.contains("hotel_availability_N")
+  //           )
+  //         ) {
+  //           return null;
+  //         }
+
+  //         return {
+  //           date: cells[1]?.innerText.trim() || "",
+  //           tour: cells[2]?.innerText.trim() || "",
+  //           nights: cells[3]?.innerText.trim() || "",
+  //           hotel: cells[4]?.innerText.trim() || "",
+  //           availability: availabilityInfo || "Unknown",
+  //           meal: cells[6]?.innerText.trim() || "",
+  //           room: cells[7]?.innerText.trim() || "",
+  //           price: priceCell
+  //             ? priceCell.innerText.match(/\d+[\.,]?\d*/)
+  //               ? priceCell.innerText.match(/\d+[\.,]?\d*/)[0]
+  //               : ""
+  //             : "",
+  //           priceType: priceTypeCell ? priceTypeCell.innerText.trim() : "",
+  //           transport: transportCell ? transportCell.innerText.trim() : "",
+  //         };
+  //       })
+  //       .filter((entry) => entry !== null);
+  //   });
+  //   return pageData;
+  // }
 
   determineAggregatorIndex(pageUrl) {
     const webpage = webpages.find((webpage) => webpage.url === pageUrl);
