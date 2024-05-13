@@ -1,24 +1,13 @@
+const { logger } = require("./logger");
 const { exec } = require("child_process");
+const fs = require("fs");
 const express = require("express");
-const bodyParser = require("body-parser");
 const cors = require("cors");
 const multer = require("multer");
+const bodyParser = require("body-parser");
 const path = require("path");
-
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "uploads/");
-  },
-  filename: function (req, file, cb) {
-    cb(null, file.originalname);
-  },
-});
-
-const upload = multer({ storage: storage });
-
-const WebScraper = require("./webScraper");
-const ExcelManager = require("./excelManager");
-
+const isPkg = typeof process.pkg !== "undefined";
+const basePath = isPkg ? path.dirname(process.execPath) : __dirname;
 const webpages = [
   { name: "Centrum", url: "https://online-centrum-holidays.com/search_tour" },
   { name: "Kompas", url: "https://online.kompastour.kz/search_tour" },
@@ -32,8 +21,31 @@ const webpages = [
   { name: "AsiaLuxe", url: "https://asialuxe.uz/tours/" },
 ];
 
-const scraper = new WebScraper(webpages);
+// Setup directories
+const uploadsDir = path.join(basePath, "uploads");
+const backupDir = path.join(uploadsDir, "backup");
+const tempUploadsDir = path.join(uploadsDir, "temp_uploads");
 
+[uploadsDir, backupDir, tempUploadsDir].forEach((dir) => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+});
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, tempUploadsDir);
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname);
+  },
+});
+const upload = multer({ storage: storage });
+
+const WebScraper = require("./webScraper");
+const ExcelManager = require("./excelManager");
+const scraper = new WebScraper(webpages);
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
@@ -43,18 +55,34 @@ app.get("*", (req, res) => {
 });
 
 app.post("/api/start-session", upload.single("file"), async (req, res) => {
-  const url = req.body.url;
-  const file = req.file;
-
-  if (!file) {
+  if (!req.file) {
     return res
       .status(400)
       .send({ success: false, message: "No file uploaded." });
   }
+  const url = req.body.url;
+  const originalFileName = req.file.originalname;
+  const originalFilePath = path.join(
+    process.cwd(),
+    "uploads",
+    originalFileName
+  );
+  const tempFilePath = path.join(
+    process.cwd(),
+    "uploads",
+    "temp_uploads",
+    originalFileName
+  );
+  const backupFilePath = path.join(
+    process.cwd(),
+    "uploads",
+    "backup",
+    originalFileName
+  );
 
   try {
-    const excelManager = new ExcelManager(`uploads/${file.originalname}`);
-    console.log(`Received file: ${file.path}`);
+    backupOriginalFile(tempFilePath, backupFilePath);
+    logger.info(`Backup created: ${backupFilePath}`);
 
     await scraper.launchBrowser();
     const scrapeResult = await scraper.navigateAndScrape(url);
@@ -73,20 +101,12 @@ app.post("/api/start-session", upload.single("file"), async (req, res) => {
       throw new Error("No data found on the page.");
     }
 
-    // const outputPath = await createAndSaveExcelOld(url, scrapeResult);
-
-    await excelManager.loadTemplate();
-    const worksheet = excelManager.getWorksheet(1);
     let aggregatedData = aggregateData(scrapeResult);
-    processAggregatedData(
-      worksheet,
-      aggregatedData,
-      scrapeResult.destinationAndStartDate,
-      excelManager
-    );
-    const outputPath = await excelManager.saveWorkbook();
+    await processAndUpdateFile(tempFilePath, aggregatedData, scrapeResult);
+    replaceOriginalWithUpdated(originalFilePath, tempFilePath);
+    logger.info(`Updated original file: ${originalFilePath}`);
 
-    exec(`start excel "${outputPath}"`, (error) => {
+    exec(`start excel "${originalFilePath}"`, (error) => {
       if (error) {
         console.error(`Could not open Excel file: ${error.message}`);
         res.status(500).send({
@@ -95,11 +115,10 @@ app.post("/api/start-session", upload.single("file"), async (req, res) => {
         });
         return;
       }
-
       res.send({
         success: true,
         message: "Data scraped and saved to Excel successfully.",
-        filePath: outputPath,
+        filePath: originalFilePath,
       });
     });
   } catch (error) {
@@ -111,66 +130,10 @@ app.post("/api/start-session", upload.single("file"), async (req, res) => {
   }
 });
 
-function aggregateData(scrapedResults) {
-  let hotelOffers = {};
-
-  scrapedResults.data.forEach((entry) => {
-    const hotel = entry.hotel;
-    const date = entry.date.split(",")[0].trim();
-    if (!hotelOffers[hotel]) {
-      hotelOffers[hotel] = {};
-    }
-    if (!hotelOffers[hotel][date]) {
-      hotelOffers[hotel][date] = entry;
-    } else {
-      if (hotelOffers[hotel][date].price > entry.price) {
-        hotelOffers[hotel][date] = entry;
-      }
-    }
-  });
-
-  Object.keys(hotelOffers).forEach((hotel) => {
-    hotelOffers[hotel] = Object.values(hotelOffers[hotel]).sort((a, b) => {
-      const dateA = new Date(a.date.split(",")[0].trim());
-      const dateB = new Date(b.date.split(",")[0].trim());
-      return dateA - dateB; // Sort by date ascending
-    });
-  });
-
-  console.log("Aggregated data: ", {
-    offers: hotelOffers,
-  });
-  return {
-    offers: hotelOffers,
-  };
-}
-
-function processAggregatedData(
-  worksheet,
-  aggregatedData,
-  destinationAndStartDate,
-  excelManager
-) {
-  const { offers } = aggregatedData;
-
-  Object.entries(offers).forEach(([hotel, datesOffers]) => {
-    console.log(
-      `Processing data for hotel: ${hotel}, Start Date: ${destinationAndStartDate.startDate}`
-    );
-    excelManager.insertHotelData(
-      worksheet,
-      hotel,
-      datesOffers,
-      destinationAndStartDate.destination,
-      destinationAndStartDate.startDate
-    );
-  });
-}
-
 const port = 3000;
 const localURL = "http://localhost:";
 app.listen(port, () => {
-  console.log(`Server running on ${localURL}${port}`);
+  logger.info(`Server running on ${localURL}${port}`);
   open(localURL + port);
 });
 
@@ -190,42 +153,92 @@ function open(url) {
   }
 }
 
-// async function createAndSaveExcelOld(url, scrapeResult) {
-//   const parsedUrl = new URL(url);
-//   const workbook = new excel.Workbook();
-//   const worksheet = workbook.addWorksheet("Results");
-//   const filenameBase = scrapeResult.destination;
+function backupOriginalFile(tempFilePath, backupFilePath) {
+  fs.copyFile(tempFilePath, backupFilePath, (err) => {
+    if (err) throw new Error(`Backup failed: ${err}`);
+    console.log(`Backup created at: ${backupFilePath}`);
+  });
+}
 
-//   worksheet.columns = [
-//     { header: "Date", key: "date", width: 15 },
-//     { header: "Tour", key: "tour", width: 25 },
-//     { header: "Nights", key: "nights", width: 10 },
-//     { header: "Hotel", key: "hotel", width: 30 },
-//     { header: "Availability", key: "availability", width: 20 },
-//     { header: "Meal", key: "meal", width: 10 },
-//     { header: "Room", key: "room", width: 10 },
-//     { header: "Price", key: "price", width: 10 },
-//     { header: "Price Type", key: "priceType", width: 15 },
-//     { header: "Transport", key: "transport", width: 15 },
-//   ];
+async function processAndUpdateFile(
+  tempFilePath,
+  aggregatedData,
+  scrapeResult
+) {
+  try {
+    const excelManager = new ExcelManager(tempFilePath);
+    await excelManager.loadTemplate();
+    const worksheet = excelManager.getWorksheet(1);
+    processAggregatedData(
+      worksheet,
+      aggregatedData,
+      scrapeResult.destinationAndStartDate,
+      excelManager
+    );
+    await excelManager.saveWorkbook();
+  } catch (error) {
+    console.error(`Failed to process file: ${error}`);
+    throw error;
+  }
+}
 
-//   scrapeResult.data.forEach((item) => {
-//     worksheet.addRow(item);
-//   });
+function replaceOriginalWithUpdated(originalFilePath, tempFilePath) {
+  fs.rename(tempFilePath, originalFilePath, (err) => {
+    if (err) throw new Error(`Failed to update original file: ${err}`);
+    console.log(`Original file updated successfully.`);
+  });
+}
 
-//   worksheet.autoFilter = {
-//     from: "A1",
-//     to: "J1",
-//   };
+function aggregateData(scrapedResults) {
+  let hotelOffers = {};
 
-//   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-//   const outputFilename = `${parsedUrl.hostname}-${filenameBase}-${timestamp}.xlsx`;
-//   const outputPath = path.join(tempDir, outputFilename);
+  scrapedResults.data.forEach((entry) => {
+    const hotel = entry.hotel;
+    const date = entry.date.split(",")[0].trim();
+    if (!hotelOffers[hotel]) {
+      hotelOffers[hotel] = {};
+    }
+    if (!hotelOffers[hotel][date]) {
+      hotelOffers[hotel][date] = entry;
+    } else if (hotelOffers[hotel][date].price > entry.price) {
+      hotelOffers[hotel][date] = entry;
+    }
+  });
 
-//   if (!fs.existsSync(__dirname)) {
-//     fs.mkdirSync(__dirname, { recursive: true });
-//   }
-//   await workbook.xlsx.writeFile(outputPath);
-//   console.log(`Workbook saved as ${outputPath}`);
-//   return outputPath;
-// }
+  Object.keys(hotelOffers).forEach((hotel) => {
+    hotelOffers[hotel] = Object.values(hotelOffers[hotel]).sort((a, b) => {
+      const dateA = new Date(a.date.split(",")[0].trim());
+      const dateB = new Date(b.date.split(",")[0].trim());
+      return dateA - dateB;
+    });
+  });
+
+  logger.info("Aggregated data: ", {
+    offers: hotelOffers,
+  });
+  return {
+    offers: hotelOffers,
+  };
+}
+
+function processAggregatedData(
+  worksheet,
+  aggregatedData,
+  destinationAndStartDate,
+  excelManager
+) {
+  const { offers } = aggregatedData;
+
+  Object.entries(offers).forEach(([hotel, datesOffers]) => {
+    logger.info(
+      `Processing data for hotel: ${hotel}, Start Date: ${destinationAndStartDate.startDate}`
+    );
+    excelManager.insertHotelData(
+      worksheet,
+      hotel,
+      datesOffers,
+      destinationAndStartDate.destination,
+      destinationAndStartDate.startDate
+    );
+  });
+}

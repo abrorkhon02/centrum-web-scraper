@@ -12,7 +12,8 @@ class WebScraper {
     this.browser = await puppeteer.launch({
       executablePath: executablePath || "./chromium/chrome.exe",
       headless: false,
-      args: ["--disable-features=site-per-process"],
+      defaultViewport: null,
+      args: ["--disable-features=site-per-process", "--start-maximized"],
     });
   }
 
@@ -24,8 +25,8 @@ class WebScraper {
 
   async navigateAndScrape(url) {
     this.url = url;
-    const page = await this.browser.newPage();
-    await page.setViewport({ width: 1366, height: 768 });
+    const pages = await this.browser.pages();
+    const page = pages[0];
     let allData = [];
     let errorOccurred = null;
     let destinationAndStartDate;
@@ -55,7 +56,7 @@ class WebScraper {
       console.error("Error during page navigation and scraping:", error);
       errorOccurred = error;
     } finally {
-      // await page.close();
+      await page.close();
     }
 
     if (errorOccurred) {
@@ -163,7 +164,7 @@ class WebScraper {
 
         if (attempt < maxRetries) {
           const delayTime = retryDelay * Math.pow(2, attempt - 1); // Exponential backoff
-          console.log(`Retrying in ${delay / 1000} seconds...`);
+          console.log(`Retrying in several seconds...`);
           await delay(delayTime);
         } else {
           throw new Error(
@@ -174,50 +175,32 @@ class WebScraper {
     }
   }
 
-  async ensurePageLoad(page, url, timeout = 20000) {
-    try {
-      let timeoutHandle;
-      const pageLoadPromise = new Promise((resolve, reject) => {
-        const navigationPromise = page
-          .goto(url, {
-            waitUntil: "networkidle0",
-            timeout: 0,
-          })
-          .then(() => {
-            clearTimeout(timeoutHandle);
-            resolve("loaded");
-          })
-          .catch(reject);
+  async ensurePageLoad(page, url, retryInterval = 20000) {
+    const startTime = Date.now();
+    let loaded = false;
 
-        timeoutHandle = setTimeout(async () => {
-          if (page.isClosed()) {
-            reject("Page is closed");
-          } else {
-            console.log(
-              `Page load timeout reached (${timeout}ms). Refreshing the page.`
-            );
-            await page.reload({ waitUntil: "networkidle0" });
-            resolve("reloaded");
-          }
-        }, timeout);
-      });
-
-      const result = await pageLoadPromise;
-      if (result === "reloaded") {
-        console.log(
-          "Page was reloaded, checking for stability before proceeding."
-        );
-        await page.waitForNavigation({
+    while (!loaded) {
+      try {
+        // Attempt to navigate to the page
+        await page.goto(url, {
           waitUntil: "networkidle0",
-          timeout: 30000,
+          timeout: retryInterval, // Use retryInterval for the timeout
         });
-        console.log("Page reloaded and stable.");
-      } else {
-        console.log("Page loaded successfully without needing a reload.");
+        loaded = true; // If navigation succeeds, set loaded to true
+        console.log("Page loaded successfully.");
+      } catch (error) {
+        // Check if the error is due to timeout or other navigation issues
+        console.log(`Page load timeout (${retryInterval}ms). Retrying...`);
+        // Optionally add a page reload instead of navigating again
+        await page.reload({
+          waitUntil: "networkidle0",
+          timeout: retryInterval,
+        });
       }
-    } catch (error) {
-      console.error("Error ensuring page load:", error);
-      throw new Error("Failed to ensure the page is loaded");
+
+      if (!loaded) {
+        await new Promise((resolve) => setTimeout(resolve, retryInterval));
+      }
     }
   }
 
@@ -444,61 +427,6 @@ class WebScraper {
       webpages
     );
   }
-
-  // async extractDataOld(page, url) {
-  //   let pageData = await page.evaluate(() => {
-  //     const rows = Array.from(
-  //       document.querySelectorAll(".resultset .res tbody tr")
-  //     );
-  //     return rows
-  //       .map((row) => {
-  //         const cells = row.querySelectorAll("td");
-  //         const priceCell = row.querySelector(".td_price span.price");
-  //         const priceTypeCell = row.querySelector(".type_price span");
-  //         const transportCell = row.querySelector(".transport div");
-
-  //         const availabilityElements = Array.from(
-  //           row.querySelectorAll("td.nw span.hotel_availability")
-  //         );
-  //         const availabilityInfo = availabilityElements
-  //           .map((span) => {
-  //             if (span.classList.contains("hotel_availability_Y")) return "ЕМ ";
-  //             if (span.classList.contains("hotel_availability_N")) return "НМ ";
-  //             if (span.classList.contains("hotel_availability_R")) return "ПЗ ";
-  //             if (span.classList.contains("hotel_availability_F")) return "МЛ ";
-  //           })
-  //           .join("");
-
-  //         if (
-  //           availabilityElements.length === 4 &&
-  //           availabilityElements.every((span) =>
-  //             span.classList.contains("hotel_availability_N")
-  //           )
-  //         ) {
-  //           return null;
-  //         }
-
-  //         return {
-  //           date: cells[1]?.innerText.trim() || "",
-  //           tour: cells[2]?.innerText.trim() || "",
-  //           nights: cells[3]?.innerText.trim() || "",
-  //           hotel: cells[4]?.innerText.trim() || "",
-  //           availability: availabilityInfo || "Unknown",
-  //           meal: cells[6]?.innerText.trim() || "",
-  //           room: cells[7]?.innerText.trim() || "",
-  //           price: priceCell
-  //             ? priceCell.innerText.match(/\d+[\.,]?\d*/)
-  //               ? priceCell.innerText.match(/\d+[\.,]?\d*/)[0]
-  //               : ""
-  //             : "",
-  //           priceType: priceTypeCell ? priceTypeCell.innerText.trim() : "",
-  //           transport: transportCell ? transportCell.innerText.trim() : "",
-  //         };
-  //       })
-  //       .filter((entry) => entry !== null);
-  //   });
-  //   return pageData;
-  // }
 
   determineAggregatorIndex(pageUrl) {
     const webpage = webpages.find((webpage) => webpage.url === pageUrl);

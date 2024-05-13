@@ -2,12 +2,11 @@ const excel = require("exceljs");
 const path = require("path");
 const fs = require("fs");
 const cmpstr = require("cmpstr");
-const logger = require("./logger");
+const { logger, hotelMatchLogger, hotelNotMatchLogger } = require("./logger");
 
 class ExcelManager {
-  constructor(templatePath, outputPath = null) {
+  constructor(templatePath) {
     this.templatePath = templatePath;
-    this.outputPath = outputPath;
     this.workbook = new excel.Workbook();
     this.lastUsedRow = 2;
     this.comparisonCache = new Map();
@@ -27,12 +26,11 @@ class ExcelManager {
     });
   }
 
-  async saveWorkbook(customFileName = null) {
+  async saveWorkbook() {
     await this.workbook.xlsx.writeFile(this.templatePath);
-    console.log(
+    logger.info(
       `Changes saved back to the original file: ${this.templatePath}`
     );
-    return this.templatePath;
   }
 
   getWorksheet(name) {
@@ -59,11 +57,16 @@ class ExcelManager {
 
       // Only process the row if it's the start of a merge block or a single unmerged cell
       if (cell.value) {
-        existingNameNormalized = this.normalizeHotelName(cell.value);
+        if (typeof cell.value !== "string") {
+          console.error(
+            "Invalid input: Expected a string, received:",
+            cell.value
+          );
+          return;
+        }
 
-        if (
-          this.compareHotels(normalizedInputName, existingNameNormalized) === 0
-        ) {
+        existingNameNormalized = this.normalizeHotelName(cell.value);
+        if (this.compareHotels(hotelName, cell.value) === 0) {
           return; // If the hotels are the same, skip further processing
         }
 
@@ -88,15 +91,15 @@ class ExcelManager {
     });
 
     if (maxSimilarity >= 0.8) {
-      logger.info(
-        `Confirmed best match: '${mostSimilarName}' (Normalized: '${bestMatchNormalized}') with ${
+      hotelMatchLogger.info(
+        `Confirmed best match between: '${hotelName}' and '${mostSimilarName}'; Normalized: '${normalizedInputName} and '${bestMatchNormalized}') at ${
           maxSimilarity * 100
         }% similarity at row ${foundRow}.`
       );
       return foundRow;
     } else {
-      logger.info(
-        `No sufficient match found for '${hotelName}' (Normalized: '${normalizedInputName}'), closest was '${mostSimilarName}' (Normalized: '${bestMatchNormalized}') with ${
+      hotelNotMatchLogger.info(
+        `No sufficient match found for '${hotelName}' and '${mostSimilarName}'; Normalized: '${normalizedInputName}' and ${bestMatchNormalized}') with ${
           maxSimilarity * 100
         }% similarity.`
       );
@@ -105,102 +108,101 @@ class ExcelManager {
   }
 
   weightedSimilarity(inputName, existingName) {
-    const initialWordsWeight = 0.5;
-    const overallWordsWeight = 0.5;
+    const initialWordsWeight = 0.1;
+    const uniqueWordsWeight = 0.7;
+    const overallWordsWeight = 0.2;
+    const percentageToExtract = 0.6;
 
-    // Function to extract the first N words from a string
-    const extractInitialWords = (text, numberOfWords) => {
-      return text.split(" ").slice(0, numberOfWords).join(" ");
-    };
-
-    // Adjust the number of words to compare here
-    const numberOfWordsToCompare = 3;
-
-    // Extract the first two or three words
-    const inputInitialWords = extractInitialWords(
-      inputName,
-      numberOfWordsToCompare
-    );
-    const existingInitialWords = extractInitialWords(
-      existingName,
-      numberOfWordsToCompare
-    );
-
-    // Compute similarity for the initial words using Dice Coefficient
     const initialWordsSimilarity = cmpstr.diceCoefficient(
-      inputInitialWords,
-      existingInitialWords
+      this.extractInitialWords(inputName, percentageToExtract),
+      this.extractInitialWords(existingName, percentageToExtract)
     );
 
-    // Compute overall similarity for the entire strings
+    const inputUniqueWords = this.extractUniqueWords(inputName);
+    const existingUniqueWords = this.extractUniqueWords(existingName);
+    const uniqueWordsSimilarity = cmpstr.diceCoefficient(
+      inputUniqueWords,
+      existingUniqueWords
+    );
     const overallSimilarity = cmpstr.diceCoefficient(inputName, existingName);
 
-    // Combine the similarities with respective weights
     return (
       initialWordsWeight * initialWordsSimilarity +
+      uniqueWordsWeight * uniqueWordsSimilarity +
       overallWordsWeight * overallSimilarity
     );
   }
 
   compareHotels(hotelA, hotelB) {
-    const cacheKey = `${hotelA}|${hotelB}`;
-    if (this.comparisonCache.has(cacheKey)) {
-      return this.comparisonCache.get(cacheKey);
-    }
-
+    // logger.info(`Comparing hotels: ${hotelA} vs ${hotelB}`);
+    const cityA = this.extractCityName(hotelA) || "";
+    const cityB = this.extractCityName(hotelB) || "";
+    // logger.info(`Extracted cities: ${cityA}, ${cityB}`);
     let nameA = this.normalizeHotelName(hotelA);
     let nameB = this.normalizeHotelName(hotelB);
+    logger.info(`Normalized names for comparing: ${nameA}, ${nameB}`);
 
-    // Regex to extract the numerical star rating explicitly stated as '-star'
-    const starRegex = /(\d+)-star/; // This matches '4-star' and captures '4'
+    const starRegex = /(\d+)-star/;
     let starsA = nameA.match(starRegex);
     let starsB = nameB.match(starRegex);
+    // logger.info(
+    //   `Star ratings: ${starsA ? starsA[1] : "None"} vs ${
+    //     starsB ? starsB[1] : "None"
+    //   }`
+    // );
 
-    let similarity = 0;
-    if (starsA && starsB && starsA[1] !== starsB[1]) {
-      // logger.info(`Star level mismatch: ${starsA[1]} vs ${starsB[1]}`);
-      similarity = 0; // Explicitly set similarity to 0 if star levels differ
-    } else {
-      // Remove star ratings from names to compare names only
-      nameA = nameA.replace(starRegex, "").trim();
-      nameB = nameB.replace(starRegex, "").trim();
-      similarity = cmpstr.diceCoefficient(nameA, nameB);
+    // Conditions to handle null or undefined cities or star ratings
+    if (
+      (cityA && cityB && cityA !== cityB) ||
+      (starsA && starsB && starsA[1] !== starsB[1])
+    ) {
+      // logger.info("Mismatch found. Returning 0 similarity.");
+      return 0;
     }
 
-    this.comparisonCache.set(cacheKey, similarity);
+    // Proceed with the name comparison even if one or both star ratings are undefined
+    nameA = nameA.replace(starRegex, "").trim();
+    nameB = nameB.replace(starRegex, "").trim();
+    // logger.info(`Names after removing star ratings: ${nameA}, ${nameB}`);
+
+    // Calculate similarity using diceCoefficient
+    const similarity = cmpstr.diceCoefficient
+      ? cmpstr.diceCoefficient(nameA, nameB)
+      : 0;
+    logger.info(`Computed similarity: ${similarity}`);
+
     return similarity;
   }
 
   normalizeHotelName(name) {
     let normalized = name.toLowerCase();
-
-    // Remove any parenthetical content
-    normalized = normalized.replace(/\s*\([^)]*\)/g, "");
-
-    // Remove common hotel-related keywords and star levels to simplify the name
-    normalized = normalized.replace(
-      /\b(international|1-star|2-star|3-star|4-star|5-star)\b/g,
-      ""
-    );
-
-    // Correctly handle and convert asterisks or stars into numeric star ratings
-    // First, handle cases like '5*' to '5-star'
     normalized = normalized.replace(/(\d+)\s*\*/g, "$1-star");
-
-    // Then handle multiple asterisks like '****'
     normalized = normalized.replace(
       /\*{1,5}/g,
       (match) => `${match.length}-star`
     );
-
-    // Normalize other numeric star ratings to have '-star' suffix if not already done
-    normalized = normalized.replace(/(\d+)\s*star/g, "$1-star");
-    normalized = normalized.replace(/(\d+)\s*stars/g, "$1-star");
-
-    // Normalize spaces
+    normalized = normalized.replace(/\(([^)]+)\)(?![^\(]*\))/g, "");
     normalized = normalized.replace(/\s+/g, " ").trim();
-
     return normalized;
+  }
+
+  extractCityName(hotelName) {
+    const match = hotelName.match(/\(([^)]+)\)\s*$/);
+    return match ? match[1].trim().toLowerCase() : null;
+  }
+
+  extractInitialWords = (text, percentage) => {
+    const words = text.split(" ");
+    const numberOfWords = Math.round(words.length * percentage);
+    return words.slice(0, numberOfWords).join(" ");
+  };
+
+  extractUniqueWords(hotelName) {
+    let words = hotelName.toLowerCase().split(/\s+/); // Split by spaces after converting to lower case
+    let uniqueWords = words.filter(
+      (word) => !commonWords.has(word) && isNaN(word)
+    ); // Filter out common words and numbers
+    return uniqueWords.join(" "); // Return the unique words as a single string
   }
 
   createHotelBlock(worksheet, hotelName, startRow) {
@@ -243,7 +245,7 @@ class ExcelManager {
     );
     logger.info(`Inserting data for ${hotel}`);
     datesOffers.forEach((offer) => {
-      this.insertOfferData(worksheet, startRow, offer);
+      this.insertOfferData(worksheet, startRow, offer, destination);
     });
     this.updateLastUsedRow(); // Update lastUsedRow after modifying the sheet
   }
@@ -284,44 +286,33 @@ class ExcelManager {
   normalizeRoomType(roomType) {
     let normalized = roomType.toLowerCase();
 
-    // Normalize basic room types and their common variations
-    normalized = normalized.replace(/\bstandard room\b/g, "standard");
-    normalized = normalized.replace(/\bdouble room\b/g, "double");
-    normalized = normalized.replace(/\bdeluxe room\b/g, "deluxe");
-    normalized = normalized.replace(/\bexecutive room\b/g, "executive");
+    // Consolidate variations of 'double', 'twin', and related terms
     normalized = normalized.replace(
-      /\b(junior suite|jnr suite|executive suite)\b/g,
-      "suite"
+      /\b(dbl|double|twin|2\s*adl?s?|2adults?|2pax)\b/g,
+      "double"
     );
 
-    normalized = normalized.replace(/\superior room\b/g, "superior");
+    // Consolidate 'economy', 'econom', 'standard', and 'budget' into 'standard'
+    normalized = normalized.replace(
+      /\b(econom(?:y)?|standard|budget|std)\b/g,
+      "standard"
+    );
 
-    normalized = normalized.replace(/\bsingle room\b/g, "single");
-    normalized = normalized.replace(/\btwin room\b/g, "twin");
-    normalized = normalized.replace(/\btriple room\b/g, "triple");
-    normalized = normalized.replace(/\bquad room\b/g, "quad");
+    // Remove the word 'room' completely
+    normalized = normalized.replace(/\broom\b/g, "");
 
-    // Normalize each specific keyword separately to prevent overlapping issues
-    normalized = normalized.replace(/\bstandard\b/g, "standard");
-    normalized = normalized.replace(/\bdouble\b/g, "double");
-    normalized = normalized.replace(/\bdeluxe\b/g, "deluxe");
-    normalized = normalized.replace(/\bexecutive\b/g, "executive");
-    normalized = normalized.replace(/\bsuite\b/g, "suite");
+    // Handle other room types
     normalized = normalized.replace(/\bsingle\b/g, "single");
-    normalized = normalized.replace(/\btwin\b/g, "twin");
     normalized = normalized.replace(/\btriple\b/g, "triple");
     normalized = normalized.replace(/\bquad\b/g, "quad");
+    normalized = normalized.replace(/\bexecutive\b/g, "executive");
+    normalized = normalized.replace(/\bsuperior\b/g, "superior");
 
-    // Normalize numbers and abbreviations
-    normalized = normalized.replace(/\b2adl?\b/g, "2 adult");
-
-    // Remove descriptions that usually do not impact the room type matching
-    normalized = normalized.replace(/\bwith [^,]*\b/g, ""); // removes any phrases starting with 'with'
-    normalized = normalized.replace(/\bview\b/g, ""); // removes variations of view descriptors
-    normalized = normalized.replace(/\bbalcony\b/g, ""); // removes word 'balcony'
-    normalized = normalized.replace(/\bcity\b/g, ""); // removes city related descriptions
-    normalized = normalized.replace(/\bsea\b/g, ""); // removes sea related descriptions
-    normalized = normalized.replace(/\bgarden\b/g, ""); // removes garden related descriptions
+    // Remove unnecessary words and noise
+    normalized = normalized.replace(
+      /\b(with|and|or|street|view|balcony|city|sea|garden)\b/g,
+      ""
+    );
 
     // Trim and reduce multiple spaces to a single space
     normalized = normalized.replace(/\s+/g, " ").trim();
@@ -329,10 +320,26 @@ class ExcelManager {
     return normalized;
   }
 
-  insertOfferData(worksheet, startRow, offer) {
+  insertOfferData(worksheet, startRow, offer, destination) {
     logger.info(
       `Attempting to insert data for date: ${offer.date} and start row: ${startRow}`
     );
+
+    if (destination.toLowerCase() === "грузия" && offer.aggregatorIndex === 5) {
+      let date = new Date(offer.date);
+      console.log(`Date before update: ${date}`);
+      if (date.getUTCDay() === 6) {
+        // 6 is Saturday
+        date.setDate(date.getDate() - 1);
+        offer.date = `${date.getUTCDate().toString().padStart(2, "0")}.${(
+          date.getUTCMonth() + 1
+        )
+          .toString()
+          .padStart(2, "0")}.${date.getUTCFullYear()}`;
+      }
+      console.log(`Updated date: ${offer.date}`);
+    }
+
     let rowIndex = this.findDateRow(worksheet, startRow, offer.date);
 
     if (rowIndex === null) {
@@ -414,5 +421,64 @@ class ExcelManager {
     return new Date(Date.UTC(year, month - 1, day));
   }
 }
+
+const commonWords = new Set([
+  "by",
+  "hotel",
+  "hotels",
+  "suites",
+  "residence",
+  "resort",
+  "lodge",
+  "place",
+  "house",
+  "boutique",
+  "spa",
+  "b&b",
+  "motel",
+  "hostel",
+  "guesthouse",
+  "accommodation",
+  "stay",
+  "room",
+  "rooms",
+  "palace",
+  "international",
+  "national",
+  "luxury",
+  "budget",
+  "economy",
+  "apartments",
+  "bungalows",
+  "palace",
+  "line",
+  "villa",
+  "villas",
+  "tbilisi",
+  "adjara",
+  "gudauri",
+  "gurjaani",
+  "imereti",
+  "kazbegi",
+  "kvareli",
+  "lagodekhi",
+  "mtskheta",
+  "samegrelo-upper svaneti",
+  "samtskhe-javakheti",
+  "shekvetili",
+  "кахетия",
+  "телави",
+  "abu dhabi",
+  "ajman",
+  "dubai",
+  "fujairah",
+  "ras al khaimah",
+  "sharjah",
+  "umm al quwain",
+  "al barsha",
+  "bur dubai",
+  "deira",
+  "official,",
+]);
 
 module.exports = ExcelManager;
