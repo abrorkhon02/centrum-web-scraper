@@ -1,6 +1,7 @@
 const { logger } = require("./logger");
 const { exec } = require("child_process");
 const fs = require("fs");
+const fsExtra = require("fs-extra");
 const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
@@ -49,11 +50,11 @@ const scraper = new WebScraper(webpages);
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, "./frontend")));
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "./frontend/index.html"));
-});
 
+// Serve static files from the frontend directory
+app.use(express.static(path.join(__dirname, "./frontend")));
+
+// API endpoints
 app.post("/api/start-session", upload.single("file"), async (req, res) => {
   if (!req.file) {
     return res
@@ -81,7 +82,7 @@ app.post("/api/start-session", upload.single("file"), async (req, res) => {
   );
 
   try {
-    backupOriginalFile(tempFilePath, backupFilePath);
+    await backupOriginalFile(tempFilePath, backupFilePath);
     logger.info(`Backup created: ${backupFilePath}`);
 
     await scraper.launchBrowser();
@@ -103,7 +104,7 @@ app.post("/api/start-session", upload.single("file"), async (req, res) => {
 
     let aggregatedData = aggregateData(scrapeResult);
     await processAndUpdateFile(tempFilePath, aggregatedData, scrapeResult);
-    replaceOriginalWithUpdated(originalFilePath, tempFilePath);
+    await replaceOriginalWithUpdated(originalFilePath, tempFilePath);
     logger.info(`Updated original file: ${originalFilePath}`);
 
     exec(`start excel "${originalFilePath}"`, (error) => {
@@ -130,6 +131,11 @@ app.post("/api/start-session", upload.single("file"), async (req, res) => {
   }
 });
 
+// Catch-all route to serve index.html for frontend routing
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "./frontend/index.html"));
+});
+
 const port = 3000;
 const localURL = "http://localhost:";
 app.listen(port, () => {
@@ -153,11 +159,13 @@ function open(url) {
   }
 }
 
-function backupOriginalFile(tempFilePath, backupFilePath) {
-  fs.copyFile(tempFilePath, backupFilePath, (err) => {
-    if (err) throw new Error(`Backup failed: ${err}`);
+async function backupOriginalFile(tempFilePath, backupFilePath) {
+  try {
+    await fsExtra.copy(tempFilePath, backupFilePath);
     console.log(`Backup created at: ${backupFilePath}`);
-  });
+  } catch (err) {
+    throw new Error(`Backup failed: ${err}`);
+  }
 }
 
 async function processAndUpdateFile(
@@ -182,11 +190,13 @@ async function processAndUpdateFile(
   }
 }
 
-function replaceOriginalWithUpdated(originalFilePath, tempFilePath) {
-  fs.rename(tempFilePath, originalFilePath, (err) => {
-    if (err) throw new Error(`Failed to update original file: ${err}`);
+async function replaceOriginalWithUpdated(originalFilePath, tempFilePath) {
+  try {
+    await fsExtra.move(tempFilePath, originalFilePath, { overwrite: true });
     console.log(`Original file updated successfully.`);
-  });
+  } catch (err) {
+    throw new Error(`Failed to update original file: ${err}`);
+  }
 }
 
 function aggregateData(scrapedResults) {
@@ -213,12 +223,8 @@ function aggregateData(scrapedResults) {
     });
   });
 
-  logger.info("Aggregated data: ", {
-    offers: hotelOffers,
-  });
-  return {
-    offers: hotelOffers,
-  };
+  logger.info("Aggregated data: ", { offers: hotelOffers });
+  return { offers: hotelOffers };
 }
 
 function processAggregatedData(

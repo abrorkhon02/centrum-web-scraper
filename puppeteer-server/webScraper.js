@@ -183,7 +183,6 @@ class WebScraper {
       try {
         // Attempt to navigate to the page
         await page.goto(url, {
-          waitUntil: "networkidle0",
           timeout: retryInterval, // Use retryInterval for the timeout
         });
         loaded = true; // If navigation succeeds, set loaded to true
@@ -261,7 +260,7 @@ class WebScraper {
           return;
         }
 
-        await page.waitForSelector(".load.right", { timeout: 10000 });
+        await page.waitForSelector(".load.right", { timeout: 20000 });
         console.log("Search button found!");
 
         await page.evaluate(() => {
