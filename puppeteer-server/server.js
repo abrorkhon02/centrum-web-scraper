@@ -23,26 +23,17 @@ const webpages = [
 ];
 
 // Setup directories
-const uploadsDir = path.join(basePath, "uploads");
+const uploadsDir = path.join(basePath, "uploads"); // Original templates
 const backupDir = path.join(uploadsDir, "backup");
-const tempUploadsDir = path.join(uploadsDir, "temp_uploads");
+const outputDir = path.join(uploadsDir, "output"); // New directory for processed files
 
-[uploadsDir, backupDir, tempUploadsDir].forEach((dir) => {
+[uploadsDir, backupDir, outputDir].forEach((dir) => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
 });
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, tempUploadsDir);
-  },
-  filename: function (req, file, cb) {
-    cb(null, file.originalname);
-  },
-});
-const upload = multer({ storage: storage });
+const upload = multer({ storage: multer.memoryStorage() });
 
 const WebScraper = require("./webScraper");
 const ExcelManager = require("./excelManager");
@@ -61,36 +52,30 @@ app.post("/api/start-session", upload.single("file"), async (req, res) => {
       .status(400)
       .send({ success: false, message: "No file uploaded." });
   }
+
   const url = req.body.url;
   const originalFileName = req.file.originalname;
-  const originalFilePath = path.join(
-    process.cwd(),
-    "uploads",
-    originalFileName
-  );
-  const tempFilePath = path.join(
-    process.cwd(),
-    "uploads",
-    "temp_uploads",
-    originalFileName
-  );
+  const originalFilePath = path.join(uploadsDir, originalFileName); // Path to the uploaded template
+
+  // Create backup file path with timestamp
   const backupFilePath = path.join(
-    process.cwd(),
-    "uploads",
-    "backup",
-    originalFileName
+    backupDir,
+    `${path.parse(originalFileName).name}_${new Date()
+      .toLocaleString()
+      .replace(/[/\\?%*:|"<>]/g, "-")}${path.parse(originalFileName).ext}`
   );
 
+  const outputFilePath = path.join(outputDir, originalFileName); // Output file in the output directory
+
   try {
-    await backupOriginalFile(tempFilePath, backupFilePath);
-    logger.info(`Backup created: ${backupFilePath}`);
+    await backupOriginalFile(originalFilePath, backupFilePath);
 
     await scraper.launchBrowser();
     const scrapeResult = await scraper.navigateAndScrape(url);
     await scraper.closeBrowser();
 
     if (scrapeResult.error) {
-      console.error(scrapeResult.error);
+      logger.info(scrapeResult.error);
       res.status(500).send({
         success: false,
         message: `Scraping completed with errors: ${scrapeResult.error}`,
@@ -103,13 +88,18 @@ app.post("/api/start-session", upload.single("file"), async (req, res) => {
     }
 
     let aggregatedData = aggregateData(scrapeResult);
-    await processAndUpdateFile(tempFilePath, aggregatedData, scrapeResult);
-    await replaceOriginalWithUpdated(originalFilePath, tempFilePath);
-    logger.info(`Updated original file: ${originalFilePath}`);
+    await processAndUpdateFile(
+      originalFilePath,
+      aggregatedData,
+      scrapeResult,
+      outputFilePath
+    ); // Process and save to output
+    logger.info(`Updated file saved to: ${outputFilePath}`);
 
-    exec(`start excel "${originalFilePath}"`, (error) => {
+    exec(`start excel "${outputFilePath}"`, (error) => {
+      // Open the output file
       if (error) {
-        console.error(`Could not open Excel file: ${error.message}`);
+        logger.info(`Could not open Excel file: ${error.message}`);
         res.status(500).send({
           success: false,
           message: `Could not open Excel file: ${error.message}`,
@@ -119,11 +109,11 @@ app.post("/api/start-session", upload.single("file"), async (req, res) => {
       res.send({
         success: true,
         message: "Data scraped and saved to Excel successfully.",
-        filePath: originalFilePath,
+        filePath: outputFilePath,
       });
     });
   } catch (error) {
-    console.error("Failed to scrape data:", error);
+    logger.info("Failed to scrape data:", error);
     res.status(500).send({
       success: false,
       message: `Failed to scrape data: ${error.message}`,
@@ -162,19 +152,20 @@ function open(url) {
 async function backupOriginalFile(tempFilePath, backupFilePath) {
   try {
     await fsExtra.copy(tempFilePath, backupFilePath);
-    console.log(`Backup created at: ${backupFilePath}`);
+    logger.info(`Backup created at: ${backupFilePath}`); // Use Winston logger
   } catch (err) {
     throw new Error(`Backup failed: ${err}`);
   }
 }
 
 async function processAndUpdateFile(
-  tempFilePath,
+  originalFilePath,
   aggregatedData,
-  scrapeResult
+  scrapeResult,
+  outputFilePath
 ) {
   try {
-    const excelManager = new ExcelManager(tempFilePath);
+    const excelManager = new ExcelManager(originalFilePath); // Load the original template
     await excelManager.loadTemplate();
     const worksheet = excelManager.getWorksheet(1);
     processAggregatedData(
@@ -183,19 +174,10 @@ async function processAndUpdateFile(
       scrapeResult.destinationAndStartDate,
       excelManager
     );
-    await excelManager.saveWorkbook();
+    await excelManager.saveWorkbook(outputFilePath); // Save to the output file path
   } catch (error) {
-    console.error(`Failed to process file: ${error}`);
+    logger.info(`Failed to process file: ${error}`); // Use Winston logger
     throw error;
-  }
-}
-
-async function replaceOriginalWithUpdated(originalFilePath, tempFilePath) {
-  try {
-    await fsExtra.move(tempFilePath, originalFilePath, { overwrite: true });
-    console.log(`Original file updated successfully.`);
-  } catch (err) {
-    throw new Error(`Failed to update original file: ${err}`);
   }
 }
 
@@ -223,7 +205,7 @@ function aggregateData(scrapedResults) {
     });
   });
 
-  logger.info("Aggregated data: ", { offers: hotelOffers });
+  logger.info("Aggregated data: ", { offers: hotelOffers }); // Use Winston logger
   return { offers: hotelOffers };
 }
 
@@ -237,6 +219,7 @@ function processAggregatedData(
 
   Object.entries(offers).forEach(([hotel, datesOffers]) => {
     logger.info(
+      // Use Winston logger
       `Processing data for hotel: ${hotel}, Start Date: ${destinationAndStartDate.startDate}`
     );
     excelManager.insertHotelData(

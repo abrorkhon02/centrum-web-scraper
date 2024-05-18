@@ -26,11 +26,10 @@ class ExcelManager {
     });
   }
 
-  async saveWorkbook() {
-    await this.workbook.xlsx.writeFile(this.templatePath);
-    logger.info(
-      `Changes saved back to the original file: ${this.templatePath}`
-    );
+  async saveWorkbook(outputFilePath) {
+    // Updated saveWorkbook function
+    await this.workbook.xlsx.writeFile(outputFilePath);
+    logger.info(`Changes saved to: ${outputFilePath}`);
   }
 
   getWorksheet(name) {
@@ -58,7 +57,7 @@ class ExcelManager {
       // Only process the row if it's the start of a merge block or a single unmerged cell
       if (cell.value) {
         if (typeof cell.value !== "string") {
-          console.error(
+          logger.info(
             "Invalid input: Expected a string, received:",
             cell.value
           );
@@ -140,7 +139,7 @@ class ExcelManager {
     // logger.info(`Extracted cities: ${cityA}, ${cityB}`);
     let nameA = this.normalizeHotelName(hotelA);
     let nameB = this.normalizeHotelName(hotelB);
-    logger.info(`Normalized names for comparing: ${nameA}, ${nameB}`);
+    // logger.info(`Normalized names for comparing: ${nameA}, ${nameB}`);
 
     const starRegex = /(\d+)-star/;
     let starsA = nameA.match(starRegex);
@@ -207,28 +206,12 @@ class ExcelManager {
 
   createHotelBlock(worksheet, hotelName, startRow) {
     let currentRow = Math.max(startRow, this.lastUsedRow + 1);
-    // Check each row in the 9-row range for merges or empty cells
-    for (let i = 0; i < 9; i++) {
-      let row = worksheet.getRow(startRow + i);
-      let cell = row.getCell(1);
 
-      if (cell.isMerged) {
-        // Since the block is merged, we only need to set the hotel name in the master cell
-        let masterRow = worksheet.getRow(
-          worksheet.getCell(cell.master.address).row
-        );
-        masterRow.getCell(1).value = hotelName;
-        return masterRow.number; // Return the master row number of the merged block
-      }
+    // Merge 18 rows for the hotel block
+    worksheet.mergeCells(startRow, 1, startRow + 17, 1);
+    worksheet.getRow(startRow).getCell(1).value = hotelName;
 
-      // If no merges are found and this is the first row of the loop, set the hotel name and merge
-      if (i === 0 && !cell.value) {
-        worksheet.getRow(startRow).getCell(1).value = hotelName;
-        worksheet.mergeCells(startRow, 1, startRow + 8, 1);
-      }
-    }
-
-    this.lastUsedRow = currentRow + 8; // Update last used row after creating a new block
+    this.lastUsedRow = currentRow + 17; // Update last used row
     logger.info(
       `Created new block for ${hotelName} starting at row ${currentRow}`
     );
@@ -237,42 +220,31 @@ class ExcelManager {
 
   insertHotelData(worksheet, hotel, datesOffers, destination, startDate) {
     const startRow = this.findOrAddHotelBlock(worksheet, hotel);
-    this.populateDates(
-      worksheet,
-      startRow,
-      startDate,
-      this.getWeekDaysByDestination(destination)
-    );
+    this.populateDates(worksheet, startRow, startDate);
     logger.info(`Inserting data for ${hotel}`);
     datesOffers.forEach((offer) => {
       this.insertOfferData(worksheet, startRow, offer, destination);
     });
-    this.updateLastUsedRow(); // Update lastUsedRow after modifying the sheet
+    this.updateLastUsedRow();
   }
 
-  populateDates(worksheet, startRow, startDate, weekDays) {
+  populateDates(worksheet, startRow, startDate) {
     let currentDate = this.formatDateForExcel(startDate);
     logger.info(
       `Starting to populate dates at row ${startRow} from date ${startDate}`
     );
 
-    let daysAdded = 0;
-    while (daysAdded < 9) {
-      // Ensure exactly 9 dates are populated
-      if (weekDays.includes(currentDate.getUTCDay())) {
-        const formattedDate = `${currentDate
-          .getUTCDate()
-          .toString()
-          .padStart(2, "0")}.${(currentDate.getUTCMonth() + 1)
-          .toString()
-          .padStart(2, "0")}`;
-        let row = worksheet.getRow(startRow + daysAdded);
-        row.getCell(2).value = formattedDate;
-        logger.info(
-          `Populating row ${startRow + daysAdded} with date ${formattedDate}`
-        );
-        daysAdded++;
-      }
+    // Populate 18 dates
+    for (let i = 0; i < 18; i++) {
+      const formattedDate = `${currentDate
+        .getUTCDate()
+        .toString()
+        .padStart(2, "0")}.${(currentDate.getUTCMonth() + 1)
+        .toString()
+        .padStart(2, "0")}`;
+      let row = worksheet.getRow(startRow + i);
+      row.getCell(2).value = formattedDate;
+      logger.info(`Populating row ${startRow + i} with date ${formattedDate}`);
       currentDate.setUTCDate(currentDate.getUTCDate() + 1);
     }
   }
@@ -288,7 +260,7 @@ class ExcelManager {
 
     // Consolidate variations of 'double', 'twin', and related terms
     normalized = normalized.replace(
-      /\b(dbl|double|twin|2\s*adl?s?|2adults?|2pax)\b/g,
+      /\b(dbl|double|twin|2\s*adl?s?|2adult?|2pax|king|wall)\b/g,
       "double"
     );
 
@@ -310,7 +282,7 @@ class ExcelManager {
 
     // Remove unnecessary words and noise
     normalized = normalized.replace(
-      /\b(with|and|or|street|view|balcony|city|sea|garden)\b/g,
+      /\b(with|and|or|street|view|balcony|city|sea|garden|back|opera|)\b/g,
       ""
     );
 
@@ -324,26 +296,9 @@ class ExcelManager {
     logger.info(
       `Attempting to insert data for date: ${offer.date} and start row: ${startRow}`
     );
-
-    if (destination.toLowerCase() === "грузия" && offer.aggregatorIndex === 5) {
-      let date = new Date(offer.date);
-      console.log(`Date before update: ${date}`);
-      if (date.getUTCDay() === 6) {
-        // 6 is Saturday
-        date.setDate(date.getDate() - 1);
-        offer.date = `${date.getUTCDate().toString().padStart(2, "0")}.${(
-          date.getUTCMonth() + 1
-        )
-          .toString()
-          .padStart(2, "0")}.${date.getUTCFullYear()}`;
-      }
-      console.log(`Updated date: ${offer.date}`);
-    }
-
     let rowIndex = this.findDateRow(worksheet, startRow, offer.date);
-
     if (rowIndex === null) {
-      logger.error(
+      logger.info(
         "Date not found in the expected rows, check the date population logic."
       );
       return;
@@ -352,9 +307,24 @@ class ExcelManager {
     logger.info(`Date row index found: ${rowIndex}`);
     let row = worksheet.getRow(rowIndex);
     const priceCol = 3 + offer.aggregatorIndex;
+    let roomTypeCol;
+    // Calculate roomTypeCol based on destination
+    // const roomTypeCol = destination.toLowerCase() === "uae" || "оаэ" ? 10 : 9;
+    if (
+      destination.toLowerCase() === "uae" ||
+      destination.toLowerCase() === "оаэ"
+    ) {
+      roomTypeCol = 10;
+    } else if (
+      destination.toLowerCase() === "georgia" ||
+      destination.toLowerCase() === "грузия"
+    ) {
+      roomTypeCol = 9;
+    }
+    console.log(`The Roomtype col is: ${roomTypeCol}`);
 
-    // Fetch existing room type from column 'I' which is index 9
-    let existingRoomType = row.getCell(9).value || "";
+    // Fetch existing room type from the correct column
+    let existingRoomType = row.getCell(roomTypeCol).value || "";
     logger.info(`Existing room type fetched: '${existingRoomType}'`);
 
     let normalizedInputRoomType = this.normalizeRoomType(offer.roomType);
@@ -371,10 +341,12 @@ class ExcelManager {
     );
     logger.info(`Similarity score between room types: ${similarity}`);
 
-    // If there is no existing room type in column 'I', set it
+    // If there is no existing room type in the correct column, set it
     if (!existingRoomType) {
-      logger.info(`Column 'I' is empty, setting room type: ${offer.roomType}`);
-      row.getCell(9).value = offer.roomType;
+      logger.info(
+        `Column '${roomTypeCol}' is empty, setting room type: ${offer.roomType}`
+      );
+      row.getCell(roomTypeCol).value = offer.roomType;
     }
 
     // Determine whether to display the room type with the price based on similarity
@@ -390,17 +362,18 @@ class ExcelManager {
       row.getCell(priceCol).value = offer.price;
     }
   }
-
   findDateRow(worksheet, startRow, date) {
     const targetDateStr = date.split(",")[0].trim().slice(0, 5);
-    for (let i = 0; i < 9; i++) {
+
+    // Search within 18 rows
+    for (let i = 0; i < 18; i++) {
       let row = worksheet.getRow(startRow + i);
       let cellDate = row.getCell(2).value;
       if (cellDate === targetDateStr) {
         return startRow + i;
       }
     }
-    logger.error(
+    logger.info(
       `Date ${targetDateStr} not found in rows starting at ${startRow}`
     );
     return null;
@@ -408,11 +381,6 @@ class ExcelManager {
 
   compareStrings(stringA, stringB) {
     return cmpstr.diceCoefficient(stringA, stringB);
-  }
-
-  getWeekDaysByDestination(destination) {
-    if (!destination) return [1, 2, 4, 5, 6];
-    return destination.toLowerCase() === "грузия" ? [1, 2, 4, 5] : [2, 6];
   }
 
   parseDate(dateInput) {
