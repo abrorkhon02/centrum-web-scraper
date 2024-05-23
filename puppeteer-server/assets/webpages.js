@@ -7,6 +7,6 @@ module.exports = [
     url: "https://uae.kazunion.com/Kazunion/SearchPackage?isFHome=1",
   },
   { name: "Prestige", url: "http://online.uz-prestige.com/search_tour" },
-  { name: "EasyBooking", url: "https://tours.easybooking.uz/search_tour" },
   { name: "AsiaLuxe", url: "https://asialuxe.uz/tours/" },
+  { name: "EasyBooking", url: "https://tours.easybooking.uz/search_tour" },
 ];

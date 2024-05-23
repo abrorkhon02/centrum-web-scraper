@@ -47,7 +47,7 @@ async function loadFromExcel() {
     if (rowNumber === 1) return; // Skip the header row
 
     const rowValues = row.values;
-    logger.info(`Row ${rowNumber} values: ${JSON.stringify(rowValues)}`);
+    // logger.info(`Row ${rowNumber} values: ${JSON.stringify(rowValues)}`);
 
     const templateHotelName = rowValues[1] || "NA"; // Column A - Online Centrum
     const kompastourHotelName = rowValues[2] || "NA"; // Column B - Kompastour
@@ -64,9 +64,9 @@ async function loadFromExcel() {
         hotelMapping[websiteName][websiteHotelName] = [];
       }
       hotelMapping[websiteName][websiteHotelName].push(templateHotelName);
-      logger.info(
-        `Added mapping for ${websiteName}: ${websiteHotelName} -> ${templateHotelName}`
-      );
+      // logger.info(
+      //   `Added mapping for ${websiteName}: ${websiteHotelName} -> ${templateHotelName}`
+      // );
     };
 
     addMapping("Kompastour", kompastourHotelName);

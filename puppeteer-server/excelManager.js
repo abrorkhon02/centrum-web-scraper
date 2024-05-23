@@ -1,5 +1,5 @@
-const excel = require("exceljs");
 const cmpstr = require("cmpstr");
+const excel = require("exceljs");
 const { logger, hotelMatchLogger, hotelNotMatchLogger } = require("./logger");
 
 class ExcelManager {
@@ -8,7 +8,6 @@ class ExcelManager {
     this.hotelMapping = hotelMapping;
     this.workbook = new excel.Workbook();
     this.lastUsedRow = 2;
-    this.comparisonCache = new Map();
   }
 
   async loadTemplate() {
@@ -44,8 +43,8 @@ class ExcelManager {
       "FunSun",
       "Kazunion",
       "PrestigeUZ",
-      "EasyBooking",
       "AsiaLuxe",
+      "EasyBooking",
     ];
 
     const currentAggregator = pageNames[aggregatorIndex];
@@ -59,6 +58,10 @@ class ExcelManager {
     }
 
     logger.info("Current OTA is Online-Centrum, skipping hotel mapping");
+    return this.findHotelInTemplate(worksheet, hotelName);
+  }
+
+  findHotelInTemplate(worksheet, hotelName) {
     const normalizedInputName = this.normalizeHotelName(hotelName);
     let foundRow = null;
 
@@ -73,7 +76,7 @@ class ExcelManager {
       if (cell.value && normalizedTemplateName === normalizedInputName) {
         foundRow = rowNumber;
         logger.info(
-          `A match between scraped hotel: ${normalizedInputName} and template hotel name: ${normalizedTemplateName} is found`
+          `Match found in template: scraped hotel name "${normalizedInputName}" matched with template hotel name "${normalizedTemplateName}" at row: ${foundRow}`
         );
       }
     });
@@ -83,7 +86,7 @@ class ExcelManager {
       return foundRow;
     } else {
       hotelNotMatchLogger.info(
-        `No match found for hotel: ${hotelName}, normalized: ${normalizedInputName}, adding it to the bottom`
+        `No match found for hotel: ${hotelName}, normalized: ${normalizedInputName}. Adding it to the bottom.`
       );
       return this.createHotelBlock(worksheet, hotelName, this.lastUsedRow + 1);
     }
@@ -95,45 +98,48 @@ class ExcelManager {
       `Searching for hotel in mapping: ${hotelName} (normalized: ${normalizedHotelName}) for aggregator: ${currentAggregator}`
     );
 
-    if (this.hotelMapping[currentAggregator]) {
-      for (const [mappedHotel, synonyms] of Object.entries(
-        this.hotelMapping[currentAggregator]
-      )) {
-        const normalizedMappedHotel = this.normalizeHotelName(mappedHotel);
-        if (normalizedMappedHotel === normalizedHotelName) {
-          logger.info(`Match found in mapping for hotel: ${hotelName}`);
-          const templateHotelName = synonyms[0];
+    const hotelMapping = this.hotelMapping[currentAggregator];
 
-          let foundRow = null;
-          worksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
-            if (rowNumber < 2) return;
+    if (hotelMapping) {
+      const templateHotelName = hotelMapping[normalizedHotelName]
+        ? hotelMapping[normalizedHotelName][0]
+        : null;
 
-            let cell = row.getCell(1);
-            if (cell.isMerged && cell.master && rowNumber !== cell.master.row) {
-              return;
-            }
+      if (templateHotelName) {
+        logger.info(
+          `Match found in mapping for hotel: ${hotelName} -> ${templateHotelName}`
+        );
 
-            if (
-              cell.value &&
-              this.normalizeHotelName(cell.value) ===
-                this.normalizeHotelName(templateHotelName)
-            ) {
-              foundRow = rowNumber;
-              logger.info(`Hotel found in worksheet at row: ${foundRow}`);
-            }
-          });
+        let foundRow = null;
+        worksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
+          if (rowNumber < 2) return;
 
-          if (foundRow) {
-            hotelMatchLogger.info(
-              `Matched hotel: ${hotelName} (normalized: ${normalizedHotelName}) to row: ${foundRow}`
-            );
-            return foundRow;
+          let cell = row.getCell(1);
+          if (cell.isMerged && cell.master && rowNumber !== cell.master.row) {
+            return;
           }
+
+          if (
+            cell.value &&
+            this.normalizeHotelName(cell.value) ===
+              this.normalizeHotelName(templateHotelName)
+          ) {
+            foundRow = rowNumber;
+            logger.info(`Hotel found in worksheet at row: ${foundRow}`);
+          }
+        });
+
+        if (foundRow) {
+          hotelMatchLogger.info(
+            `Matched hotel: ${hotelName} (normalized: ${normalizedHotelName}) to row: ${foundRow}`
+          );
+          return foundRow;
         }
       }
     }
+
     hotelNotMatchLogger.info(
-      `Hotel not found in mapping for ${currentAggregator}, normalized: ${normalizedHotelName}, adding it to the bottom`
+      `Hotel not found in mapping for ${currentAggregator}, normalized: ${normalizedHotelName}. Adding it to the bottom.`
     );
     return this.createHotelBlock(worksheet, hotelName, this.lastUsedRow + 1);
   }
@@ -143,7 +149,7 @@ class ExcelManager {
 
     let normalized = name
       .replace(/^\s*["']\s*|\s*["']\s*$/g, "") // Remove leading/trailing quotes
-      .replace(/\s*\([^)]*\)\s*/g, "") // Remove text in parentheses
+      .replace(/\s*\([^()]*\)\s*/g, "") // Remove text within single-level parentheses
       .replace(/(\d\s?\*+|\*+\s?\d)/g, (match) => {
         const stars = match.replace(/\D/g, ""); // Extract digit characters
         return ` ${stars}* `; // Ensure space around stars
@@ -151,6 +157,7 @@ class ExcelManager {
       .replace(/\bthreestar\b/gi, "3*") // Replace "ThreeStar" with "3*"
       .replace(/\bfourstar\b/gi, "4*") // Replace "FourStar" with "4*"
       .replace(/\bfivestar\b/gi, "5*") // Replace "FiveStar" with "5*"
+      .replace(/\s*\([^)]*\)\s*/g, "") // Remove all text within parentheses (again for nested)
       .replace(/\s+/g, " ") // Remove extra spaces
       .trim()
       .toLowerCase(); // Make case-insensitive
@@ -170,101 +177,6 @@ class ExcelManager {
       `Created new block for ${hotelName} starting at row ${currentRow}`
     );
     return startRow;
-  }
-
-  weightedSimilarity(inputName, existingName) {
-    const initialWordsWeight = 0.1;
-    const uniqueWordsWeight = 0.7;
-    const overallWordsWeight = 0.2;
-    const percentageToExtract = 0.6;
-
-    const initialWordsSimilarity = cmpstr.diceCoefficient(
-      this.extractInitialWords(inputName, percentageToExtract),
-      this.extractInitialWords(existingName, percentageToExtract)
-    );
-
-    const inputUniqueWords = this.extractUniqueWords(inputName);
-    const existingUniqueWords = this.extractUniqueWords(existingName);
-    const uniqueWordsSimilarity = cmpstr.diceCoefficient(
-      inputUniqueWords,
-      existingUniqueWords
-    );
-    const overallSimilarity = cmpstr.diceCoefficient(inputName, existingName);
-
-    return (
-      initialWordsWeight * initialWordsSimilarity +
-      uniqueWordsWeight * uniqueWordsSimilarity +
-      overallWordsWeight * overallSimilarity
-    );
-  }
-
-  compareHotels(hotelA, hotelB) {
-    logger.info(`Comparing hotels: ${hotelA} vs ${hotelB}`);
-    const cityA = this.extractCityName(hotelA) || "";
-    const cityB = this.extractCityName(hotelB) || "";
-    // logger.info(`Extracted cities: ${cityA}, ${cityB}`);
-    let nameA = this.normalizeHotelNameAndStars(hotelA);
-    let nameB = this.normalizeHotelNameAndStars(hotelB);
-    // logger.info(`Normalized names for comparing: ${nameA}, ${nameB}`);
-
-    const starRegex = /(\d+)-star/;
-    let starsA = nameA.match(starRegex);
-    let starsB = nameB.match(starRegex);
-    // logger.info(
-    //   `Star ratings: ${starsA ? starsA[1] : "None"} vs ${
-    //     starsB ? starsB[1] : "None"
-    //   }`
-    // );
-
-    // Conditions to handle null or undefined cities or star ratings
-    if (
-      (cityA && cityB && cityA !== cityB) ||
-      (starsA && starsB && starsA[1] !== starsB[1])
-    ) {
-      // logger.info("Mismatch found. Returning 0 similarity.");
-      return 0;
-    }
-
-    // Proceed with the name comparison even if one or both star ratings are undefined
-    nameA = nameA.replace(starRegex, "").trim();
-    nameB = nameB.replace(starRegex, "").trim();
-    // logger.info(`Names after removing star ratings: ${nameA}, ${nameB}`);
-
-    const similarity = cmpstr.diceCoefficient(nameA, nameB);
-    logger.info(`Computed similarity: ${similarity}`);
-
-    return similarity;
-  }
-
-  normalizeHotelNameAndStars(name) {
-    let normalized = name.toLowerCase();
-    normalized = normalized.replace(/(\d+)\s*\*/g, "$1-star");
-    normalized = normalized.replace(
-      /\*{1,5}/g,
-      (match) => `${match.length}-star`
-    );
-    normalized = normalized.replace(/\(([^)]+)\)(?![^\(]*\))/g, "");
-    normalized = normalized.replace(/\s+/g, " ").trim();
-    return normalized;
-  }
-
-  extractCityName(hotelName) {
-    const match = hotelName.match(/\(([^)]+)\)\s*$/);
-    return match ? match[1].trim().toLowerCase() : null;
-  }
-
-  extractInitialWords = (text, percentage) => {
-    const words = text.split(" ");
-    const numberOfWords = Math.round(words.length * percentage);
-    return words.slice(0, numberOfWords).join(" ");
-  };
-
-  extractUniqueWords(hotelName) {
-    let words = hotelName.toLowerCase().split(/\s+/);
-    let uniqueWords = words.filter(
-      (word) => !commonWords.has(word) && isNaN(word)
-    );
-    return uniqueWords.join(" ");
   }
 
   populateDates(worksheet, startRow, startDate) {
@@ -315,7 +227,7 @@ class ExcelManager {
     normalized = normalized.replace(/\bsuperior\b/g, "superior");
 
     normalized = normalized.replace(
-      /\b(with|and|or|street|view|balcony|city|sea|garden|back|opera|)\b/g,
+      /\b(with|and|or|street|view|balcony|city|sea|garden|back|opera|high|floor)\b/g,
       ""
     );
 
@@ -367,7 +279,7 @@ class ExcelManager {
     ) {
       roomTypeCol = 9;
     }
-    console.log(`The Roomtype col is: ${roomTypeCol}`);
+    logger.info(`The Roomtype col is: ${roomTypeCol}`);
 
     let existingRoomType = row.getCell(roomTypeCol).value || "";
     logger.info(`Existing room type fetched: '${existingRoomType}'`);
@@ -432,64 +344,5 @@ class ExcelManager {
     return new Date(Date.UTC(year, month - 1, day));
   }
 }
-
-const commonWords = new Set([
-  "by",
-  "hotel",
-  "hotels",
-  "suites",
-  "residence",
-  "resort",
-  "lodge",
-  "place",
-  "house",
-  "boutique",
-  "spa",
-  "b&b",
-  "motel",
-  "hostel",
-  "guesthouse",
-  "accommodation",
-  "stay",
-  "room",
-  "rooms",
-  "palace",
-  "international",
-  "national",
-  "luxury",
-  "budget",
-  "economy",
-  "apartments",
-  "bungalows",
-  "palace",
-  "line",
-  "villa",
-  "villas",
-  "tbilisi",
-  "adjara",
-  "gudauri",
-  "gurjaani",
-  "imereti",
-  "kazbegi",
-  "kvareli",
-  "lagodekhi",
-  "mtskheta",
-  "samegrelo-upper svaneti",
-  "samtskhe-javakheti",
-  "shekvetili",
-  "кахетия",
-  "телави",
-  "abu dhabi",
-  "ajman",
-  "dubai",
-  "fujairah",
-  "ras al khaimah",
-  "sharjah",
-  "umm al quwain",
-  "al barsha",
-  "bur dubai",
-  "deira",
-  "official,",
-]);
 
 module.exports = ExcelManager;
