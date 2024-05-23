@@ -9,23 +9,11 @@ const bodyParser = require("body-parser");
 const path = require("path");
 const isPkg = typeof process.pkg !== "undefined";
 const basePath = isPkg ? path.dirname(process.execPath) : __dirname;
-const webpages = [
-  { name: "Centrum", url: "https://online-centrum-holidays.com/search_tour" },
-  { name: "Kompas", url: "https://online.kompastour.kz/search_tour" },
-  { name: "FunSun", url: "https://b2b.fstravel.asia/search_tour" },
-  {
-    name: "Kazunion",
-    url: "https://uae.kazunion.com/Kazunion/SearchPackage?isFHome=1",
-  },
-  { name: "Prestige", url: "http://online.uz-prestige.com/search_tour" },
-  { name: "EasyBooking", url: "https://tours.easybooking.uz/search_tour" },
-  { name: "AsiaLuxe", url: "https://asialuxe.uz/tours/" },
-];
+const webpages = require("./assets/webpages");
 
-// Setup directories
-const uploadsDir = path.join(basePath, "uploads"); // Original templates
+const uploadsDir = path.join(basePath, "uploads");
 const backupDir = path.join(uploadsDir, "backup");
-const outputDir = path.join(uploadsDir, "output"); // New directory for processed files
+const outputDir = path.join(uploadsDir, "output");
 
 [uploadsDir, backupDir, outputDir].forEach((dir) => {
   if (!fs.existsSync(dir)) {
@@ -35,17 +23,30 @@ const outputDir = path.join(uploadsDir, "output"); // New directory for processe
 
 const upload = multer({ storage: multer.memoryStorage() });
 
+const { loadHotelMapping } = require("./hotelNameMapper");
 const WebScraper = require("./webScraper");
 const ExcelManager = require("./excelManager");
 const scraper = new WebScraper(webpages);
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
-
-// Serve static files from the frontend directory
 app.use(express.static(path.join(__dirname, "./frontend")));
 
-// API endpoints
+let hotelMapping = {};
+loadHotelMapping()
+  .then((mapping) => {
+    hotelMapping = mapping;
+    logger.info("Hotel mapping ready for use.");
+  })
+  .catch((error) => {
+    logger.error("Error initializing hotel mapping:", error);
+    return;
+  });
+
+async function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 app.post("/api/start-session", upload.single("file"), async (req, res) => {
   if (!req.file) {
     return res
@@ -55,17 +56,14 @@ app.post("/api/start-session", upload.single("file"), async (req, res) => {
 
   const url = req.body.url;
   const originalFileName = req.file.originalname;
-  const originalFilePath = path.join(uploadsDir, originalFileName); // Path to the uploaded template
-
-  // Create backup file path with timestamp
+  const originalFilePath = path.join(uploadsDir, originalFileName);
   const backupFilePath = path.join(
     backupDir,
     `${path.parse(originalFileName).name}_${new Date()
       .toLocaleString()
       .replace(/[/\\?%*:|"<>]/g, "-")}${path.parse(originalFileName).ext}`
   );
-
-  const outputFilePath = path.join(outputDir, originalFileName); // Output file in the output directory
+  const outputFilePath = path.join(outputDir, originalFileName);
 
   try {
     await backupOriginalFile(originalFilePath, backupFilePath);
@@ -93,11 +91,10 @@ app.post("/api/start-session", upload.single("file"), async (req, res) => {
       aggregatedData,
       scrapeResult,
       outputFilePath
-    ); // Process and save to output
+    );
     logger.info(`Updated file saved to: ${outputFilePath}`);
 
     exec(`start excel "${outputFilePath}"`, (error) => {
-      // Open the output file
       if (error) {
         logger.info(`Could not open Excel file: ${error.message}`);
         res.status(500).send({
@@ -121,7 +118,6 @@ app.post("/api/start-session", upload.single("file"), async (req, res) => {
   }
 });
 
-// Catch-all route to serve index.html for frontend routing
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "./frontend/index.html"));
 });
@@ -152,7 +148,7 @@ function open(url) {
 async function backupOriginalFile(tempFilePath, backupFilePath) {
   try {
     await fsExtra.copy(tempFilePath, backupFilePath);
-    logger.info(`Backup created at: ${backupFilePath}`); // Use Winston logger
+    logger.info(`Backup created at: ${backupFilePath}`);
   } catch (err) {
     throw new Error(`Backup failed: ${err}`);
   }
@@ -164,20 +160,43 @@ async function processAndUpdateFile(
   scrapeResult,
   outputFilePath
 ) {
-  try {
-    const excelManager = new ExcelManager(originalFilePath); // Load the original template
-    await excelManager.loadTemplate();
-    const worksheet = excelManager.getWorksheet(1);
-    processAggregatedData(
-      worksheet,
-      aggregatedData,
-      scrapeResult.destinationAndStartDate,
-      excelManager
-    );
-    await excelManager.saveWorkbook(outputFilePath); // Save to the output file path
-  } catch (error) {
-    logger.info(`Failed to process file: ${error}`); // Use Winston logger
-    throw error;
+  const maxRetries = 3;
+  const retryDelay = 5000; // 5 seconds
+  let attempt = 0;
+
+  while (attempt < maxRetries) {
+    try {
+      const excelManager = new ExcelManager(originalFilePath, hotelMapping);
+      await excelManager.loadTemplate();
+      const worksheet = excelManager.getWorksheet(1);
+      processAggregatedData(
+        worksheet,
+        aggregatedData,
+        scrapeResult.destinationAndStartDate,
+        excelManager
+      );
+      await excelManager.saveWorkbook(outputFilePath);
+      logger.info(
+        `File processed and saved successfully on attempt ${attempt + 1}`
+      );
+      return; // Exit function after successful processing
+    } catch (error) {
+      attempt += 1;
+      logger.warn(`Failed to process file on attempt ${attempt}: ${error}`);
+      if (attempt < maxRetries) {
+        logger.info(
+          `Retrying in ${
+            retryDelay / 1000
+          } seconds... If the Excel sheet is opened, please close it.`
+        );
+        await delay(retryDelay);
+      } else {
+        logger.error(
+          `Failed to process file after ${maxRetries} attempts: ${error}`
+        );
+        throw error;
+      }
+    }
   }
 }
 
@@ -205,7 +224,7 @@ function aggregateData(scrapedResults) {
     });
   });
 
-  logger.info("Aggregated data: ", { offers: hotelOffers }); // Use Winston logger
+  logger.info("Aggregated data: ", { offers: hotelOffers });
   return { offers: hotelOffers };
 }
 
@@ -219,7 +238,6 @@ function processAggregatedData(
 
   Object.entries(offers).forEach(([hotel, datesOffers]) => {
     logger.info(
-      // Use Winston logger
       `Processing data for hotel: ${hotel}, Start Date: ${destinationAndStartDate.startDate}`
     );
     excelManager.insertHotelData(

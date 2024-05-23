@@ -1,12 +1,11 @@
 const excel = require("exceljs");
-const path = require("path");
-const fs = require("fs");
 const cmpstr = require("cmpstr");
 const { logger, hotelMatchLogger, hotelNotMatchLogger } = require("./logger");
 
 class ExcelManager {
-  constructor(templatePath) {
+  constructor(templatePath, hotelMapping) {
     this.templatePath = templatePath;
+    this.hotelMapping = hotelMapping;
     this.workbook = new excel.Workbook();
     this.lastUsedRow = 2;
     this.comparisonCache = new Map();
@@ -15,6 +14,7 @@ class ExcelManager {
   async loadTemplate() {
     await this.workbook.xlsx.readFile(this.templatePath);
     this.updateLastUsedRow();
+    logger.info("Template loaded successfully.");
   }
 
   updateLastUsedRow() {
@@ -24,86 +24,152 @@ class ExcelManager {
         this.lastUsedRow = rowNumber;
       }
     });
+    logger.info(`Last used row updated to: ${this.lastUsedRow}`);
   }
 
   async saveWorkbook(outputFilePath) {
-    // Updated saveWorkbook function
     await this.workbook.xlsx.writeFile(outputFilePath);
     logger.info(`Changes saved to: ${outputFilePath}`);
   }
 
   getWorksheet(name) {
+    logger.info(`Retrieving worksheet: ${name}`);
     return this.workbook.getWorksheet(name);
   }
 
-  findOrAddHotelBlock(worksheet, hotelName) {
+  findOrAddHotelBlock(worksheet, hotelName, destination, aggregatorIndex) {
+    const pageNames = [
+      "Online-Centrum",
+      "Kompastour",
+      "FunSun",
+      "Kazunion",
+      "PrestigeUZ",
+      "EasyBooking",
+      "AsiaLuxe",
+    ];
+
+    const currentAggregator = pageNames[aggregatorIndex];
+    logger.info(
+      `Processing hotel: ${hotelName} for destination: ${destination} on page: ${currentAggregator}`
+    );
+
+    if (currentAggregator !== "Online-Centrum") {
+      logger.info(`Performing name mapping for ${currentAggregator}`);
+      return this.findHotelInMapping(worksheet, hotelName, currentAggregator);
+    }
+
+    logger.info("Current OTA is Online-Centrum, skipping hotel mapping");
     const normalizedInputName = this.normalizeHotelName(hotelName);
-    let existingNameNormalized;
     let foundRow = null;
-    let maxSimilarity = 0;
-    let mostSimilarName = "";
-    let bestMatchNormalized = "";
 
     worksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
-      if (rowNumber < 3) return; // Skip header rows
-
+      if (rowNumber < 3) return;
       let cell = row.getCell(1);
-
-      // Correct handling of merged cells: check if it's the master cell of a merge
       if (cell.isMerged && cell.master && rowNumber !== cell.master.row) {
-        return; // Skip this row as it's not the start of the merge block
+        return;
       }
+      const normalizedTemplateName = this.normalizeHotelName(cell.value);
 
-      // Only process the row if it's the start of a merge block or a single unmerged cell
-      if (cell.value) {
-        if (typeof cell.value !== "string") {
-          logger.info(
-            "Invalid input: Expected a string, received:",
-            cell.value
-          );
-          return;
-        }
-
-        existingNameNormalized = this.normalizeHotelName(cell.value);
-        if (this.compareHotels(hotelName, cell.value) === 0) {
-          return; // If the hotels are the same, skip further processing
-        }
-
-        const similarity = this.weightedSimilarity(
-          normalizedInputName,
-          existingNameNormalized
+      if (cell.value && normalizedTemplateName === normalizedInputName) {
+        foundRow = rowNumber;
+        logger.info(
+          `A match between scraped hotel: ${normalizedInputName} and template hotel name: ${normalizedTemplateName} is found`
         );
-
-        if (similarity > maxSimilarity) {
-          maxSimilarity = similarity;
-          mostSimilarName = cell.value;
-          bestMatchNormalized = existingNameNormalized;
-          foundRow = rowNumber; // Store the row number
-
-          logger.info(
-            `New best match found: '${normalizedInputName}' with '${bestMatchNormalized}' - Similarity: ${similarity.toFixed(
-              4
-            )}`
-          );
-        }
       }
     });
 
-    if (maxSimilarity >= 0.8) {
-      hotelMatchLogger.info(
-        `Confirmed best match between: '${hotelName}' and '${mostSimilarName}'; Normalized: '${normalizedInputName} and '${bestMatchNormalized}') at ${
-          maxSimilarity * 100
-        }% similarity at row ${foundRow}.`
-      );
+    if (foundRow) {
+      hotelMatchLogger.info(`Matched hotel: ${hotelName} to row: ${foundRow}`);
       return foundRow;
     } else {
       hotelNotMatchLogger.info(
-        `No sufficient match found for '${hotelName}' and '${mostSimilarName}'; Normalized: '${normalizedInputName}' and ${bestMatchNormalized}') with ${
-          maxSimilarity * 100
-        }% similarity.`
+        `No match found for hotel: ${hotelName}, normalized: ${normalizedInputName}, adding it to the bottom`
       );
       return this.createHotelBlock(worksheet, hotelName, this.lastUsedRow + 1);
     }
+  }
+
+  findHotelInMapping(worksheet, hotelName, currentAggregator) {
+    const normalizedHotelName = this.normalizeHotelName(hotelName);
+    logger.info(
+      `Searching for hotel in mapping: ${hotelName} (normalized: ${normalizedHotelName}) for aggregator: ${currentAggregator}`
+    );
+
+    if (this.hotelMapping[currentAggregator]) {
+      for (const [mappedHotel, synonyms] of Object.entries(
+        this.hotelMapping[currentAggregator]
+      )) {
+        const normalizedMappedHotel = this.normalizeHotelName(mappedHotel);
+        if (normalizedMappedHotel === normalizedHotelName) {
+          logger.info(`Match found in mapping for hotel: ${hotelName}`);
+          const templateHotelName = synonyms[0];
+
+          let foundRow = null;
+          worksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
+            if (rowNumber < 2) return;
+
+            let cell = row.getCell(1);
+            if (cell.isMerged && cell.master && rowNumber !== cell.master.row) {
+              return;
+            }
+
+            if (
+              cell.value &&
+              this.normalizeHotelName(cell.value) ===
+                this.normalizeHotelName(templateHotelName)
+            ) {
+              foundRow = rowNumber;
+              logger.info(`Hotel found in worksheet at row: ${foundRow}`);
+            }
+          });
+
+          if (foundRow) {
+            hotelMatchLogger.info(
+              `Matched hotel: ${hotelName} (normalized: ${normalizedHotelName}) to row: ${foundRow}`
+            );
+            return foundRow;
+          }
+        }
+      }
+    }
+    hotelNotMatchLogger.info(
+      `Hotel not found in mapping for ${currentAggregator}, normalized: ${normalizedHotelName}, adding it to the bottom`
+    );
+    return this.createHotelBlock(worksheet, hotelName, this.lastUsedRow + 1);
+  }
+
+  normalizeHotelName(name) {
+    logger.info(`Original hotel name: ${name}`);
+
+    let normalized = name
+      .replace(/^\s*["']\s*|\s*["']\s*$/g, "") // Remove leading/trailing quotes
+      .replace(/\s*\([^)]*\)\s*/g, "") // Remove text in parentheses
+      .replace(/(\d\s?\*+|\*+\s?\d)/g, (match) => {
+        const stars = match.replace(/\D/g, ""); // Extract digit characters
+        return ` ${stars}* `; // Ensure space around stars
+      })
+      .replace(/\bthreestar\b/gi, "3*") // Replace "ThreeStar" with "3*"
+      .replace(/\bfourstar\b/gi, "4*") // Replace "FourStar" with "4*"
+      .replace(/\bfivestar\b/gi, "5*") // Replace "FiveStar" with "5*"
+      .replace(/\s+/g, " ") // Remove extra spaces
+      .trim()
+      .toLowerCase(); // Make case-insensitive
+
+    logger.info(`Normalized hotel name: ${normalized}`);
+    return normalized;
+  }
+
+  createHotelBlock(worksheet, hotelName, startRow) {
+    let currentRow = Math.max(startRow, this.lastUsedRow + 1);
+
+    worksheet.mergeCells(startRow, 1, startRow + 17, 1);
+    worksheet.getRow(startRow).getCell(1).value = hotelName;
+
+    this.lastUsedRow = currentRow + 17;
+    logger.info(
+      `Created new block for ${hotelName} starting at row ${currentRow}`
+    );
+    return startRow;
   }
 
   weightedSimilarity(inputName, existingName) {
@@ -133,12 +199,12 @@ class ExcelManager {
   }
 
   compareHotels(hotelA, hotelB) {
-    // logger.info(`Comparing hotels: ${hotelA} vs ${hotelB}`);
+    logger.info(`Comparing hotels: ${hotelA} vs ${hotelB}`);
     const cityA = this.extractCityName(hotelA) || "";
     const cityB = this.extractCityName(hotelB) || "";
     // logger.info(`Extracted cities: ${cityA}, ${cityB}`);
-    let nameA = this.normalizeHotelName(hotelA);
-    let nameB = this.normalizeHotelName(hotelB);
+    let nameA = this.normalizeHotelNameAndStars(hotelA);
+    let nameB = this.normalizeHotelNameAndStars(hotelB);
     // logger.info(`Normalized names for comparing: ${nameA}, ${nameB}`);
 
     const starRegex = /(\d+)-star/;
@@ -164,16 +230,13 @@ class ExcelManager {
     nameB = nameB.replace(starRegex, "").trim();
     // logger.info(`Names after removing star ratings: ${nameA}, ${nameB}`);
 
-    // Calculate similarity using diceCoefficient
-    const similarity = cmpstr.diceCoefficient
-      ? cmpstr.diceCoefficient(nameA, nameB)
-      : 0;
+    const similarity = cmpstr.diceCoefficient(nameA, nameB);
     logger.info(`Computed similarity: ${similarity}`);
 
     return similarity;
   }
 
-  normalizeHotelName(name) {
+  normalizeHotelNameAndStars(name) {
     let normalized = name.toLowerCase();
     normalized = normalized.replace(/(\d+)\s*\*/g, "$1-star");
     normalized = normalized.replace(
@@ -197,35 +260,11 @@ class ExcelManager {
   };
 
   extractUniqueWords(hotelName) {
-    let words = hotelName.toLowerCase().split(/\s+/); // Split by spaces after converting to lower case
+    let words = hotelName.toLowerCase().split(/\s+/);
     let uniqueWords = words.filter(
       (word) => !commonWords.has(word) && isNaN(word)
-    ); // Filter out common words and numbers
-    return uniqueWords.join(" "); // Return the unique words as a single string
-  }
-
-  createHotelBlock(worksheet, hotelName, startRow) {
-    let currentRow = Math.max(startRow, this.lastUsedRow + 1);
-
-    // Merge 18 rows for the hotel block
-    worksheet.mergeCells(startRow, 1, startRow + 17, 1);
-    worksheet.getRow(startRow).getCell(1).value = hotelName;
-
-    this.lastUsedRow = currentRow + 17; // Update last used row
-    logger.info(
-      `Created new block for ${hotelName} starting at row ${currentRow}`
     );
-    return startRow;
-  }
-
-  insertHotelData(worksheet, hotel, datesOffers, destination, startDate) {
-    const startRow = this.findOrAddHotelBlock(worksheet, hotel);
-    this.populateDates(worksheet, startRow, startDate);
-    logger.info(`Inserting data for ${hotel}`);
-    datesOffers.forEach((offer) => {
-      this.insertOfferData(worksheet, startRow, offer, destination);
-    });
-    this.updateLastUsedRow();
+    return uniqueWords.join(" ");
   }
 
   populateDates(worksheet, startRow, startDate) {
@@ -234,7 +273,6 @@ class ExcelManager {
       `Starting to populate dates at row ${startRow} from date ${startDate}`
     );
 
-    // Populate 18 dates
     for (let i = 0; i < 18; i++) {
       const formattedDate = `${currentDate
         .getUTCDate()
@@ -258,38 +296,47 @@ class ExcelManager {
   normalizeRoomType(roomType) {
     let normalized = roomType.toLowerCase();
 
-    // Consolidate variations of 'double', 'twin', and related terms
     normalized = normalized.replace(
       /\b(dbl|double|twin|2\s*adl?s?|2adult?|2pax|king|wall)\b/g,
       "double"
     );
 
-    // Consolidate 'economy', 'econom', 'standard', and 'budget' into 'standard'
     normalized = normalized.replace(
       /\b(econom(?:y)?|standard|budget|std)\b/g,
       "standard"
     );
 
-    // Remove the word 'room' completely
     normalized = normalized.replace(/\broom\b/g, "");
 
-    // Handle other room types
     normalized = normalized.replace(/\bsingle\b/g, "single");
     normalized = normalized.replace(/\btriple\b/g, "triple");
     normalized = normalized.replace(/\bquad\b/g, "quad");
     normalized = normalized.replace(/\bexecutive\b/g, "executive");
     normalized = normalized.replace(/\bsuperior\b/g, "superior");
 
-    // Remove unnecessary words and noise
     normalized = normalized.replace(
       /\b(with|and|or|street|view|balcony|city|sea|garden|back|opera|)\b/g,
       ""
     );
 
-    // Trim and reduce multiple spaces to a single space
     normalized = normalized.replace(/\s+/g, " ").trim();
 
     return normalized;
+  }
+
+  insertHotelData(worksheet, hotel, datesOffers, destination, startDate) {
+    const startRow = this.findOrAddHotelBlock(
+      worksheet,
+      hotel,
+      destination,
+      datesOffers[0].aggregatorIndex
+    );
+    this.populateDates(worksheet, startRow, startDate);
+    logger.info(`Inserting data for ${hotel}`);
+    datesOffers.forEach((offer) => {
+      this.insertOfferData(worksheet, startRow, offer, destination);
+    });
+    this.updateLastUsedRow();
   }
 
   insertOfferData(worksheet, startRow, offer, destination) {
@@ -308,8 +355,7 @@ class ExcelManager {
     let row = worksheet.getRow(rowIndex);
     const priceCol = 3 + offer.aggregatorIndex;
     let roomTypeCol;
-    // Calculate roomTypeCol based on destination
-    // const roomTypeCol = destination.toLowerCase() === "uae" || "оаэ" ? 10 : 9;
+
     if (
       destination.toLowerCase() === "uae" ||
       destination.toLowerCase() === "оаэ"
@@ -323,7 +369,6 @@ class ExcelManager {
     }
     console.log(`The Roomtype col is: ${roomTypeCol}`);
 
-    // Fetch existing room type from the correct column
     let existingRoomType = row.getCell(roomTypeCol).value || "";
     logger.info(`Existing room type fetched: '${existingRoomType}'`);
 
@@ -341,7 +386,6 @@ class ExcelManager {
     );
     logger.info(`Similarity score between room types: ${similarity}`);
 
-    // If there is no existing room type in the correct column, set it
     if (!existingRoomType) {
       logger.info(
         `Column '${roomTypeCol}' is empty, setting room type: ${offer.roomType}`
@@ -349,7 +393,6 @@ class ExcelManager {
       row.getCell(roomTypeCol).value = offer.roomType;
     }
 
-    // Determine whether to display the room type with the price based on similarity
     if (similarity < 0.8 && existingRoomType) {
       logger.info(
         `Low similarity detected (less than 80%). Displaying price with room type: ${offer.price} / ${offer.roomType}`
@@ -362,10 +405,10 @@ class ExcelManager {
       row.getCell(priceCol).value = offer.price;
     }
   }
+
   findDateRow(worksheet, startRow, date) {
     const targetDateStr = date.split(",")[0].trim().slice(0, 5);
 
-    // Search within 18 rows
     for (let i = 0; i < 18; i++) {
       let row = worksheet.getRow(startRow + i);
       let cellDate = row.getCell(2).value;

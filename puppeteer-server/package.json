@@ -16,7 +16,9 @@
       "logger.js"
     ],
     "assets": [
-      "frontend/**/*"
+      "frontend/**/*",
+      "assets/hotelMappings/**/*",
+      "assets/**/*"
     ],
     "targets": [
       "node18-win-x64"

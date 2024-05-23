@@ -188,9 +188,7 @@ class WebScraper {
         loaded = true; // If navigation succeeds, set loaded to true
         console.log("Page loaded successfully.");
       } catch (error) {
-        // Check if the error is due to timeout or other navigation issues
         console.log(`Page load timeout (${retryInterval}ms). Retrying...`);
-        // Optionally add a page reload instead of navigating again
         await page.reload({
           waitUntil: "networkidle0",
           timeout: retryInterval,

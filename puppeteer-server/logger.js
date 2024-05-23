@@ -13,7 +13,8 @@ if (!fs.existsSync(baseLogsDir)) {
 }
 
 // Common timestamp format function
-const timestampFormat = () => moment().tz("Asia/Tashkent").format();
+const timestampFormat = () =>
+  moment().tz("Asia/Tashkent").format("YYYY-MM-DD_HH-mm-ss");
 
 // Create a common format for loggers
 const logFormat = winston.format.combine(
@@ -21,7 +22,7 @@ const logFormat = winston.format.combine(
   winston.format.prettyPrint()
 );
 
-// Create the main logger with daily rotate file
+// Create the main logger with a unique file for each run
 const logger = winston.createLogger({
   level: "info",
   format: logFormat,
@@ -29,40 +30,40 @@ const logger = winston.createLogger({
     new winston.transports.Console({
       format: winston.format.simple(),
     }),
-    new DailyRotateFile({
-      filename: path.join(baseLogsDir, "app-%DATE%.log"),
-      datePattern: "YYYY-MM-DD",
-      zippedArchive: true,
+    new winston.transports.File({
+      filename: path.join(baseLogsDir, `app-${timestampFormat()}.log`),
       maxSize: "40m",
       maxFiles: "14d",
     }),
   ],
 });
 
-// Create the hotel match logger with daily rotate file
+// Create the hotel match logger with a unique file for each run
 const hotelMatchLogger = winston.createLogger({
   level: "info",
   format: logFormat,
   transports: [
-    new DailyRotateFile({
-      filename: path.join(baseLogsDir, "hotel-matches-%DATE%.log"),
-      datePattern: "YYYY-MM-DD",
-      zippedArchive: true,
+    new winston.transports.File({
+      filename: path.join(
+        baseLogsDir,
+        `hotel-matches-${timestampFormat()}.log`
+      ),
       maxSize: "30m",
       maxFiles: "14d",
     }),
   ],
 });
 
-// Create the hotel not match logger with daily rotate file
+// Create the hotel not match logger with a unique file for each run
 const hotelNotMatchLogger = winston.createLogger({
   level: "info",
   format: logFormat,
   transports: [
-    new DailyRotateFile({
-      filename: path.join(baseLogsDir, "hotel-not-matches-%DATE%.log"),
-      datePattern: "YYYY-MM-DD",
-      zippedArchive: true,
+    new winston.transports.File({
+      filename: path.join(
+        baseLogsDir,
+        `hotel-not-matches-${timestampFormat()}.log`
+      ),
       maxSize: "30m",
       maxFiles: "14d",
     }),
