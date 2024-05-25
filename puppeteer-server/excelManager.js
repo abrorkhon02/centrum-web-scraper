@@ -66,7 +66,7 @@ class ExcelManager {
     let foundRow = null;
 
     worksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
-      if (rowNumber < 3) return;
+      if (rowNumber === 1) return;
       let cell = row.getCell(1);
       if (cell.isMerged && cell.master && rowNumber !== cell.master.row) {
         return;
@@ -112,7 +112,7 @@ class ExcelManager {
 
         let foundRow = null;
         worksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
-          if (rowNumber < 2) return;
+          if (rowNumber === 1) return;
 
           let cell = row.getCell(1);
           if (cell.isMerged && cell.master && rowNumber !== cell.master.row) {
@@ -158,6 +158,9 @@ class ExcelManager {
       .replace(/\bfourstar\b/gi, "4*") // Replace "FourStar" with "4*"
       .replace(/\bfivestar\b/gi, "5*") // Replace "FiveStar" with "5*"
       .replace(/\s*\([^)]*\)\s*/g, "") // Remove all text within parentheses (again for nested)
+      .replace(/\.\s*\*/g, " *") // Remove periods before stars
+      .replace(/\*\s*\./g, "*") // Remove periods after stars
+      .replace(/\s*\.$/, "") // Remove trailing periods
       .replace(/\s+/g, " ") // Remove extra spaces
       .trim()
       .toLowerCase(); // Make case-insensitive
@@ -206,32 +209,29 @@ class ExcelManager {
   }
 
   normalizeRoomType(roomType) {
-    let normalized = roomType.toLowerCase();
+    // Remove HTML tags
+    let normalized = roomType.replace(/<[^>]*>/g, "");
 
-    normalized = normalized.replace(
-      /\b(dbl|double|twin|2\s*adl?s?|2adult?|2pax|king|wall)\b/g,
-      "double"
-    );
-
-    normalized = normalized.replace(
-      /\b(econom(?:y)?|standard|budget|std)\b/g,
-      "standard"
-    );
-
-    normalized = normalized.replace(/\broom\b/g, "");
-
-    normalized = normalized.replace(/\bsingle\b/g, "single");
-    normalized = normalized.replace(/\btriple\b/g, "triple");
-    normalized = normalized.replace(/\bquad\b/g, "quad");
-    normalized = normalized.replace(/\bexecutive\b/g, "executive");
-    normalized = normalized.replace(/\bsuperior\b/g, "superior");
-
-    normalized = normalized.replace(
-      /\b(with|and|or|street|view|balcony|city|sea|garden|back|opera|high|floor)\b/g,
-      ""
-    );
-
-    normalized = normalized.replace(/\s+/g, " ").trim();
+    // Normalize the room type
+    normalized = normalized
+      .toLowerCase()
+      .replace(
+        /\b(dbl|double|twin|2\s*adl?s?|2adult?|2pax|king|wall)\b/g,
+        "double"
+      )
+      .replace(/\b(econom(?:y)?|standard|budget|std)\b/g, "standard")
+      .replace(/\broom\b/g, "")
+      .replace(/\bsingle\b/g, "single")
+      .replace(/\btriple\b/g, "triple")
+      .replace(/\bquad\b/g, "quad")
+      .replace(/\bexecutive\b/g, "executive")
+      .replace(/\bsuperior\b/g, "superior")
+      .replace(
+        /\b(with|and|or|street|view|balcony|city|sea|garden|back|opera|high|floor)\b/g,
+        ""
+      )
+      .replace(/\s+/g, " ") // Remove extra spaces
+      .trim();
 
     return normalized;
   }

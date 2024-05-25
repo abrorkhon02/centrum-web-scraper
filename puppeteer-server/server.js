@@ -1,5 +1,6 @@
 const { logger } = require("./logger");
 const { exec } = require("child_process");
+const { getHotelMapping } = require("./hotelMappingLoader");
 const fs = require("fs");
 const fsExtra = require("fs-extra");
 const express = require("express");
@@ -10,12 +11,14 @@ const path = require("path");
 const isPkg = typeof process.pkg !== "undefined";
 const basePath = isPkg ? path.dirname(process.execPath) : __dirname;
 const webpages = require("./assets/webpages");
+const moment = require("moment-timezone");
 
 const uploadsDir = path.join(basePath, "uploads");
 const backupDir = path.join(uploadsDir, "backup");
 const outputDir = path.join(uploadsDir, "output");
+const tempOutputDir = path.join(uploadsDir, "temp_output");
 
-[uploadsDir, backupDir, outputDir].forEach((dir) => {
+[uploadsDir, backupDir, outputDir, tempOutputDir].forEach((dir) => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
@@ -23,7 +26,6 @@ const outputDir = path.join(uploadsDir, "output");
 
 const upload = multer({ storage: multer.memoryStorage() });
 
-const { loadHotelMapping } = require("./hotelNameMapper");
 const WebScraper = require("./webScraper");
 const ExcelManager = require("./excelManager");
 const scraper = new WebScraper(webpages);
@@ -33,14 +35,13 @@ app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, "./frontend")));
 
 let hotelMapping = {};
-loadHotelMapping()
+
+getHotelMapping()
   .then((mapping) => {
     hotelMapping = mapping;
-    logger.info("Hotel mapping ready for use.");
   })
   .catch((error) => {
     logger.error("Error initializing hotel mapping:", error);
-    return;
   });
 
 async function delay(ms) {
@@ -56,18 +57,17 @@ app.post("/api/start-session", upload.single("file"), async (req, res) => {
 
   const url = req.body.url;
   const originalFileName = req.file.originalname;
-  const originalFilePath = path.join(uploadsDir, originalFileName);
-  const backupFilePath = path.join(
-    backupDir,
-    `${path.parse(originalFileName).name}_${new Date()
-      .toLocaleString()
-      .replace(/[/\\?%*:|"<>]/g, "-")}${path.parse(originalFileName).ext}`
-  );
+  const tempFilePath = path.join(tempOutputDir, `temp_${originalFileName}`);
   const outputFilePath = path.join(outputDir, originalFileName);
 
   try {
-    await backupOriginalFile(originalFilePath, backupFilePath);
+    // Save the uploaded file temporarily
+    await fs.promises.writeFile(tempFilePath, req.file.buffer);
 
+    // Backup the uploaded file
+    await backupOriginalFile(tempFilePath, backupDir, originalFileName);
+
+    // Process the file
     await scraper.launchBrowser();
     const scrapeResult = await scraper.navigateAndScrape(url);
     await scraper.closeBrowser();
@@ -87,7 +87,7 @@ app.post("/api/start-session", upload.single("file"), async (req, res) => {
 
     let aggregatedData = aggregateData(scrapeResult);
     await processAndUpdateFile(
-      originalFilePath,
+      tempFilePath,
       aggregatedData,
       scrapeResult,
       outputFilePath
@@ -145,7 +145,14 @@ function open(url) {
   }
 }
 
-async function backupOriginalFile(tempFilePath, backupFilePath) {
+async function backupOriginalFile(tempFilePath, backupDir, originalFileName) {
+  const backupFilePath = path.join(
+    backupDir,
+    `${path.parse(originalFileName).name}_${moment()
+      .tz("Asia/Tashkent")
+      .format("YYYY-MM-DD_HH-mm-ss")}${path.parse(originalFileName).ext}`
+  );
+
   try {
     await fsExtra.copy(tempFilePath, backupFilePath);
     logger.info(`Backup created at: ${backupFilePath}`);
@@ -155,7 +162,7 @@ async function backupOriginalFile(tempFilePath, backupFilePath) {
 }
 
 async function processAndUpdateFile(
-  originalFilePath,
+  tempFilePath,
   aggregatedData,
   scrapeResult,
   outputFilePath
@@ -166,7 +173,7 @@ async function processAndUpdateFile(
 
   while (attempt < maxRetries) {
     try {
-      const excelManager = new ExcelManager(originalFilePath, hotelMapping);
+      const excelManager = new ExcelManager(tempFilePath, hotelMapping);
       await excelManager.loadTemplate();
       const worksheet = excelManager.getWorksheet(1);
       processAggregatedData(
