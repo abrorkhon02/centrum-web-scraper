@@ -48,6 +48,10 @@ async function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "./frontend/index.html"));
+});
+
 app.post("/api/start-session", upload.single("file"), async (req, res) => {
   if (!req.file) {
     return res
@@ -56,18 +60,14 @@ app.post("/api/start-session", upload.single("file"), async (req, res) => {
   }
 
   const url = req.body.url;
+  const updateMode = req.body.updateMode === "true";
   const originalFileName = req.file.originalname;
   const tempFilePath = path.join(tempOutputDir, `temp_${originalFileName}`);
   const outputFilePath = path.join(outputDir, originalFileName);
 
   try {
-    // Save the uploaded file temporarily
     await fs.promises.writeFile(tempFilePath, req.file.buffer);
-
-    // Backup the uploaded file
     await backupOriginalFile(tempFilePath, backupDir, originalFileName);
-
-    // Process the file
     await scraper.launchBrowser();
     const scrapeResult = await scraper.navigateAndScrape(url);
     await scraper.closeBrowser();
@@ -90,7 +90,8 @@ app.post("/api/start-session", upload.single("file"), async (req, res) => {
       tempFilePath,
       aggregatedData,
       scrapeResult,
-      outputFilePath
+      outputFilePath,
+      updateMode
     );
     logger.info(`Updated file saved to: ${outputFilePath}`);
 
@@ -116,10 +117,6 @@ app.post("/api/start-session", upload.single("file"), async (req, res) => {
       message: `Failed to scrape data: ${error.message}`,
     });
   }
-});
-
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "./frontend/index.html"));
 });
 
 const port = 3000;
@@ -165,9 +162,10 @@ async function processAndUpdateFile(
   tempFilePath,
   aggregatedData,
   scrapeResult,
-  outputFilePath
+  outputFilePath,
+  updateMode
 ) {
-  const maxRetries = 3;
+  const maxRetries = 10;
   const retryDelay = 5000; // 5 seconds
   let attempt = 0;
 
@@ -180,7 +178,8 @@ async function processAndUpdateFile(
         worksheet,
         aggregatedData,
         scrapeResult.destinationAndStartDate,
-        excelManager
+        excelManager,
+        updateMode
       );
       await excelManager.saveWorkbook(outputFilePath);
       logger.info(
@@ -239,7 +238,8 @@ function processAggregatedData(
   worksheet,
   aggregatedData,
   destinationAndStartDate,
-  excelManager
+  excelManager,
+  updateMode
 ) {
   const { offers } = aggregatedData;
 
@@ -252,7 +252,8 @@ function processAggregatedData(
       hotel,
       datesOffers,
       destinationAndStartDate.destination,
-      destinationAndStartDate.startDate
+      destinationAndStartDate.startDate,
+      updateMode
     );
   });
 }

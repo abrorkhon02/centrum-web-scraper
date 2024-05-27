@@ -49,11 +49,11 @@ async function loadFromExcel() {
     const rowValues = row.values;
     // logger.info(`Row ${rowNumber} values: ${JSON.stringify(rowValues)}`);
 
-    const templateHotelName = rowValues[1] || "NA"; // Column A - Online Centrum
-    const kompastourHotelName = rowValues[2] || "NA"; // Column B - Kompastour
-    const funsunHotelName = rowValues[3] || "NA"; // Column C - FunSun
-    const easyBookingHotelName = rowValues[4] || "NA"; // Column D - EasyBooking
-    const prestigeUZHotelName = rowValues[5] || "NA"; // Column E - PrestigeUZ
+    const templateHotelName = (rowValues[1] || "NA").toLowerCase(); // Column A - Online Centrum
+    const kompastourHotelName = (rowValues[2] || "NA").toLowerCase(); // Column B - Kompastour
+    const funsunHotelName = (rowValues[3] || "NA").toLowerCase(); // Column C - FunSun
+    const easyBookingHotelName = (rowValues[4] || "NA").toLowerCase(); // Column D - EasyBooking
+    const prestigeUZHotelName = (rowValues[5] || "NA").toLowerCase(); // Column E - PrestigeUZ
 
     // Function to add mapping
     const addMapping = (websiteName, websiteHotelName) => {
@@ -82,18 +82,18 @@ async function loadFromExcel() {
   return cleanMapping(hotelMapping);
 }
 
-// Clean the mapping to remove empty "NA" objects and redundant "NA" values
+// Clean the mapping to remove empty "na" objects and redundant "na" values
 function cleanMapping(mapping) {
   for (const website in mapping) {
     for (const hotel in mapping[website]) {
-      // Remove redundant "NA" values
-      if (mapping[website][hotel].includes("NA")) {
+      // Remove redundant "na" values
+      if (mapping[website][hotel].includes("na")) {
         mapping[website][hotel] = mapping[website][hotel].filter(
-          (name) => name !== "NA"
+          (name) => name !== "na"
         );
       }
-      // Remove "NA" objects if they are empty
-      if (hotel === "NA" && mapping[website][hotel].length === 0) {
+      // Remove "na" objects if they are empty
+      if (hotel === "na" && mapping[website][hotel].length === 0) {
         delete mapping[website][hotel];
       }
     }

@@ -61,37 +61,6 @@ class ExcelManager {
     return this.findHotelInTemplate(worksheet, hotelName);
   }
 
-  findHotelInTemplate(worksheet, hotelName) {
-    const normalizedInputName = this.normalizeHotelName(hotelName);
-    let foundRow = null;
-
-    worksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
-      if (rowNumber === 1) return;
-      let cell = row.getCell(1);
-      if (cell.isMerged && cell.master && rowNumber !== cell.master.row) {
-        return;
-      }
-      const normalizedTemplateName = this.normalizeHotelName(cell.value);
-
-      if (cell.value && normalizedTemplateName === normalizedInputName) {
-        foundRow = rowNumber;
-        logger.info(
-          `Match found in template: scraped hotel name "${normalizedInputName}" matched with template hotel name "${normalizedTemplateName}" at row: ${foundRow}`
-        );
-      }
-    });
-
-    if (foundRow) {
-      hotelMatchLogger.info(`Matched hotel: ${hotelName} to row: ${foundRow}`);
-      return foundRow;
-    } else {
-      hotelNotMatchLogger.info(
-        `No match found for hotel: ${hotelName}, normalized: ${normalizedInputName}. Adding it to the bottom.`
-      );
-      return this.createHotelBlock(worksheet, hotelName, this.lastUsedRow + 1);
-    }
-  }
-
   findHotelInMapping(worksheet, hotelName, currentAggregator) {
     const normalizedHotelName = this.normalizeHotelName(hotelName);
     logger.info(
@@ -144,11 +113,43 @@ class ExcelManager {
     return this.createHotelBlock(worksheet, hotelName, this.lastUsedRow + 1);
   }
 
+  findHotelInTemplate(worksheet, hotelName) {
+    const normalizedInputName = this.normalizeHotelName(hotelName);
+    let foundRow = null;
+
+    worksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
+      if (rowNumber === 1) return;
+      let cell = row.getCell(1);
+      if (cell.isMerged && cell.master && rowNumber !== cell.master.row) {
+        return;
+      }
+      const normalizedTemplateName = this.normalizeHotelName(cell.value);
+
+      if (cell.value && normalizedTemplateName === normalizedInputName) {
+        foundRow = rowNumber;
+        logger.info(
+          `Match found in template: scraped hotel name "${normalizedInputName}" matched with template hotel name "${normalizedTemplateName}" at row: ${foundRow}`
+        );
+      }
+    });
+
+    if (foundRow) {
+      hotelMatchLogger.info(`Matched hotel: ${hotelName} to row: ${foundRow}`);
+      return foundRow;
+    } else {
+      hotelNotMatchLogger.info(
+        `No match found for hotel: ${hotelName}, normalized: ${normalizedInputName}. Adding it to the bottom.`
+      );
+      return this.createHotelBlock(worksheet, hotelName, this.lastUsedRow + 1);
+    }
+  }
+
   normalizeHotelName(name) {
     logger.info(`Original hotel name: ${name}`);
 
     let normalized = name
       .replace(/^\s*["']\s*|\s*["']\s*$/g, "") // Remove leading/trailing quotes
+      .replace(/\(\s*(\d+)\s*\*\s*\)/g, "$1*") // Remove parentheses around star levels
       .replace(/\s*\([^()]*\)\s*/g, "") // Remove text within single-level parentheses
       .replace(/(\d\s?\*+|\*+\s?\d)/g, (match) => {
         const stars = match.replace(/\D/g, ""); // Extract digit characters
@@ -227,7 +228,7 @@ class ExcelManager {
       .replace(/\bexecutive\b/g, "executive")
       .replace(/\bsuperior\b/g, "superior")
       .replace(
-        /\b(with|and|or|street|view|balcony|city|sea|garden|back|opera|high|floor)\b/g,
+        /\b(with|and|or|street|view|balcony|city|sea|garden|back|opera|high|floor|partial|sea)\b/g,
         ""
       )
       .replace(/\s+/g, " ") // Remove extra spaces
@@ -236,22 +237,35 @@ class ExcelManager {
     return normalized;
   }
 
-  insertHotelData(worksheet, hotel, datesOffers, destination, startDate) {
+  insertHotelData(
+    worksheet,
+    hotel,
+    datesOffers,
+    destination,
+    startDate,
+    updateMode
+  ) {
     const startRow = this.findOrAddHotelBlock(
       worksheet,
       hotel,
       destination,
       datesOffers[0].aggregatorIndex
     );
-    this.populateDates(worksheet, startRow, startDate);
+
+    // Populate dates only if not in update mode or dates are not already populated
+    if (!updateMode || !this.areDatesPopulated(worksheet, startRow)) {
+      this.populateDates(worksheet, startRow, startDate);
+    }
+
     logger.info(`Inserting data for ${hotel}`);
     datesOffers.forEach((offer) => {
-      this.insertOfferData(worksheet, startRow, offer, destination);
+      this.insertOfferData(worksheet, startRow, offer, destination, updateMode);
     });
+
     this.updateLastUsedRow();
   }
 
-  insertOfferData(worksheet, startRow, offer, destination) {
+  insertOfferData(worksheet, startRow, offer, destination, updateMode) {
     logger.info(
       `Attempting to insert data for date: ${offer.date} and start row: ${startRow}`
     );
@@ -265,7 +279,7 @@ class ExcelManager {
 
     logger.info(`Date row index found: ${rowIndex}`);
     let row = worksheet.getRow(rowIndex);
-    const priceCol = 3 + offer.aggregatorIndex;
+    const priceCol = 3 + offer.aggregatorIndex; // Ensure correct column for OTA
     let roomTypeCol;
 
     if (
@@ -305,16 +319,31 @@ class ExcelManager {
       row.getCell(roomTypeCol).value = offer.roomType;
     }
 
-    if (similarity < 0.8 && existingRoomType) {
-      logger.info(
-        `Low similarity detected (less than 80%). Displaying price with room type: ${offer.price} / ${offer.roomType}`
-      );
-      row.getCell(priceCol).value = `${offer.price} / ${offer.roomType}`;
+    const currentPriceValue = row.getCell(priceCol).value;
+    const newPriceValue = offer.price;
+
+    if (updateMode) {
+      // Only update the price if it is different from the existing price
+      if (currentPriceValue !== newPriceValue) {
+        row.getCell(priceCol).value = newPriceValue;
+        row.getCell(priceCol).fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FF00FF00" }, // Green background
+        };
+      }
     } else {
-      logger.info(
-        `High similarity detected (80% or more). Displaying only price: ${offer.price}`
-      );
-      row.getCell(priceCol).value = offer.price;
+      if (similarity < 0.8 && existingRoomType) {
+        logger.info(
+          `Low similarity detected (less than 80%). Displaying price with room type: ${newPriceValue} / ${offer.roomType}`
+        );
+        row.getCell(priceCol).value = `${newPriceValue} / ${offer.roomType}`;
+      } else {
+        logger.info(
+          `High similarity detected (80% or more). Displaying only price: ${newPriceValue}`
+        );
+        row.getCell(priceCol).value = newPriceValue;
+      }
     }
   }
 
@@ -332,6 +361,16 @@ class ExcelManager {
       `Date ${targetDateStr} not found in rows starting at ${startRow}`
     );
     return null;
+  }
+
+  areDatesPopulated(worksheet, startRow) {
+    for (let i = 0; i < 18; i++) {
+      const cellValue = worksheet.getRow(startRow + i).getCell(2).value;
+      if (!cellValue) {
+        return false;
+      }
+    }
+    return true;
   }
 
   compareStrings(stringA, stringB) {

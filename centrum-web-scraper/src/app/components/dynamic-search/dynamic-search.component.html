@@ -1,6 +1,10 @@
 <div class="container">
   <h2>Select a Webpage and Upload an Excel Template to Start</h2>
-  <form (submit)="startInteraction()" enctype="multipart/form-data">
+  <form
+    (submit)="startInteraction($event)"
+    enctype="multipart/form-data"
+    [class.shake]="formHasErrors"
+  >
     <div class="webpage-selector-wrapper">
       <div class="form-group">
         <label for="webpage-selector">Webpage:</label>
@@ -8,15 +12,36 @@
           class="form-control"
           [(ngModel)]="selectedWebpage"
           name="webpage-selector"
+          [class.is-invalid]="formHasErrors && !selectedWebpage"
         >
           <option *ngFor="let webpage of webpages" [value]="webpage.url">
             {{ webpage.name }}
           </option>
         </select>
+        <div *ngIf="formHasErrors && !selectedWebpage" class="invalid-feedback">
+          Please select a webpage.
+        </div>
       </div>
     </div>
+    <div class="update-mode-checkbox">
+      <div class="checkbox-apple">
+        <input
+          class="yep"
+          id="check-apple"
+          type="checkbox"
+          [(ngModel)]="updateMode"
+          name="updateMode"
+        />
+        <label for="check-apple"></label>
+      </div>
+      <span>Update Mode</span>
+    </div>
     <div class="file-upload-wrapper">
-      <label class="file-upload" for="file">
+      <label
+        class="file-upload"
+        for="file"
+        [class.is-invalid]="formHasErrors && !selectedFile"
+      >
         <div class="icon">
           <svg xmlns="http://www.w3.org/2000/svg" fill="" viewBox="0 0 24 24">
             <g stroke-width="0" id="SVGRepo_bgCarrier"></g>
@@ -48,7 +73,14 @@
           (change)="onFileSelected($event)"
         />
       </label>
+      <div *ngIf="formHasErrors && !selectedFile" class="invalid-feedback">
+        Please upload a file.
+      </div>
     </div>
-    <button type="submit" class="btn btn-primary">Start</button>
+    <button type="submit" class="btn btn-primary" [disabled]="isLoading">
+      <ng-container *ngIf="isLoading"> Loading... </ng-container>
+      <ng-container *ngIf="!isLoading && !isSent"> Start </ng-container>
+      <ng-container *ngIf="isSent"> Sent </ng-container>
+    </button>
   </form>
 </div>
