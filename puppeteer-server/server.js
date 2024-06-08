@@ -70,7 +70,7 @@ app.post("/api/start-session", upload.single("file"), async (req, res) => {
     await backupOriginalFile(tempFilePath, backupDir, originalFileName);
     await scraper.launchBrowser();
     const scrapeResult = await scraper.navigateAndScrape(url);
-    await scraper.closeBrowser();
+    // await scraper.closeBrowser();
 
     if (scrapeResult.error) {
       logger.info(scrapeResult.error);

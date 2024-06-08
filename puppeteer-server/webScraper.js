@@ -16,7 +16,6 @@ class WebScraper {
       args: ["--disable-features=site-per-process", "--start-maximized"],
     });
   }
-
   async closeBrowser() {
     if (this.browser) {
       await this.browser.close();
@@ -38,25 +37,24 @@ class WebScraper {
       let currentPageNum = 1;
       let lastPageNum = await this.findLastPageNumber(page);
 
-      do {
+      while (currentPageNum <= lastPageNum) {
+        console.log(`Currently on page ${currentPageNum} of ${lastPageNum}`);
         const newData = await this.extractData(page, this.url);
         allData = allData.concat(newData);
-        console.log(`Currently on page ${currentPageNum} of ${lastPageNum}`);
 
         if (currentPageNum >= lastPageNum) {
           console.log("Reached the last page or there's a single page.");
           break;
         }
-
+        lastPageNum = await this.findLastPageNumber(page); // Refresh last page number
         currentPageNum++;
         await this.goToNextPage(page, currentPageNum);
-        lastPageNum = await this.findLastPageNumber(page); // Refresh last page number
-      } while (currentPageNum <= lastPageNum);
+      }
     } catch (error) {
       console.error("Error during page navigation and scraping:", error);
       errorOccurred = error;
     } finally {
-      await page.close();
+      // await page.close();
     }
 
     if (errorOccurred) {
@@ -426,8 +424,8 @@ class WebScraper {
   }
 
   determineAggregatorIndex(pageUrl) {
-    const webpage = webpages.find((webpage) => webpage.url === pageUrl);
-    return webpage ? webpages.indexOf(webpage) : -1;
+    const webpage = this.webpages.find((webpage) => webpage.url === pageUrl);
+    return webpage ? this.webpages.indexOf(webpage) : -1;
   }
 }
 
