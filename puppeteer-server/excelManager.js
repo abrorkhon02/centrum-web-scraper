@@ -326,11 +326,6 @@ class ExcelManager {
       // Only update the price if it is different from the existing price
       if (currentPriceValue !== newPriceValue) {
         row.getCell(priceCol).value = newPriceValue;
-        row.getCell(priceCol).fill = {
-          type: "pattern",
-          pattern: "solid",
-          fgColor: { argb: "FF00FF00" }, // Green background
-        };
       }
     } else {
       if (similarity < 0.8 && existingRoomType) {
