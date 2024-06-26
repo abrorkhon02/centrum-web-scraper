@@ -3,40 +3,56 @@ const fs = require("fs");
 const path = require("path");
 const { logger } = require("./logger");
 
-const excelFilePath = path.join(
+// Define paths for UAE and Georgian mappings
+const uaeExcelFilePath = path.join(
   process.cwd(),
   "./assets/UAE_MatchedHotels.xlsx"
 );
-const jsonFilePath = path.join(
+const georgiaExcelFilePath = path.join(
   process.cwd(),
-  "./assets/hotelMappings/hotelMappings.json"
+  "./assets/GEORGIA_MatchedHotels.xlsx"
+);
+const uaeJsonFilePath = path.join(
+  process.cwd(),
+  "./assets/hotelMappings/uaeHotelMappings.json"
+);
+const georgiaJsonFilePath = path.join(
+  process.cwd(),
+  "./assets/hotelMappings/georgiaHotelMappings.json"
 );
 
-async function loadHotelMapping(forceOverwrite = true) {
+async function loadHotelMapping(country, forceOverwrite = true) {
   try {
+    const jsonFilePath =
+      country === "UAE" ? uaeJsonFilePath : georgiaJsonFilePath;
+    const excelFilePath =
+      country === "UAE" ? uaeExcelFilePath : georgiaExcelFilePath;
+
     if (forceOverwrite && fs.existsSync(jsonFilePath)) {
-      logger.info("Force overwriting existing hotelMapping.json file.");
+      logger.info(
+        `Force overwriting existing ${country} hotel mapping JSON file.`
+      );
       await fs.promises.unlink(jsonFilePath);
     }
 
     if (fs.existsSync(jsonFilePath)) {
       const jsonData = await fs.promises.readFile(jsonFilePath);
       const mapping = JSON.parse(jsonData);
-      logger.info("Loaded hotel mapping from JSON file.");
+      logger.info(`Loaded ${country} hotel mapping from JSON file.`);
       return mapping;
     } else {
-      logger.info("Loading hotel mapping from Excel file.");
-      const mapping = await loadFromExcel();
-      await saveHotelMapping(mapping);
+      logger.info(`Loading ${country} hotel mapping from Excel file.`);
+      const mapping = await loadFromExcel(excelFilePath);
+      await saveHotelMapping(mapping, jsonFilePath);
       return mapping;
     }
   } catch (error) {
-    logger.error("Error loading hotel mapping:", error);
+    logger.error(`Error loading ${country} hotel mapping:`, error);
     throw error;
   }
 }
 
-async function loadFromExcel() {
+async function loadFromExcel(excelFilePath) {
   const workbook = new excel.Workbook();
   await workbook.xlsx.readFile(excelFilePath);
   const worksheet = workbook.getWorksheet(1);
@@ -47,7 +63,6 @@ async function loadFromExcel() {
     if (rowNumber === 1) return; // Skip the header row
 
     const rowValues = row.values;
-    // logger.info(`Row ${rowNumber} values: ${JSON.stringify(rowValues)}`);
 
     const templateHotelName = (rowValues[1] || "NA").toLowerCase(); // Column A - Online Centrum
     const kompastourHotelName = (rowValues[2] || "NA").toLowerCase(); // Column B - Kompastour
@@ -64,9 +79,6 @@ async function loadFromExcel() {
         hotelMapping[websiteName][websiteHotelName] = [];
       }
       hotelMapping[websiteName][websiteHotelName].push(templateHotelName);
-      // logger.info(
-      //   `Added mapping for ${websiteName}: ${websiteHotelName} -> ${templateHotelName}`
-      // );
     };
 
     addMapping("Kompastour", kompastourHotelName);
@@ -101,7 +113,7 @@ function cleanMapping(mapping) {
   return mapping;
 }
 
-async function saveHotelMapping(mapping) {
+async function saveHotelMapping(mapping, jsonFilePath) {
   try {
     const jsonData = JSON.stringify(mapping, null, 2);
     await fs.promises.writeFile(jsonFilePath, jsonData);
@@ -132,18 +144,25 @@ module.exports = {
 // Execute the function for testing purposes
 (async () => {
   try {
-    const mapping = await loadHotelMapping(true);
-    logger.info("Hotel mapping ready for use.");
+    const uaeMapping = await loadHotelMapping("UAE", true);
+    const georgiaMapping = await loadHotelMapping("Georgia", true);
+    logger.info("Hotel mappings ready for use.");
 
-    const kompastourCount = countHotelsInOTA(mapping, "Kompastour");
-    const funsunCount = countHotelsInOTA(mapping, "FunSun");
-    const easyBookingCount = countHotelsInOTA(mapping, "EasyBooking");
-    const prestigeUZCount = countHotelsInOTA(mapping, "PrestigeUZ");
+    const countries = [
+      { name: "UAE", mapping: uaeMapping },
+      { name: "Georgia", mapping: georgiaMapping },
+    ];
 
-    console.log(`Total number of hotels in Kompastour: ${kompastourCount}`);
-    console.log(`Total number of hotels in FunSun: ${funsunCount}`);
-    console.log(`Total number of hotels in EasyBooking: ${easyBookingCount}`);
-    console.log(`Total number of hotels in PrestigeUZ: ${prestigeUZCount}`);
+    const otas = ["Kompastour", "FunSun", "EasyBooking", "PrestigeUZ"];
+
+    countries.forEach((country) => {
+      otas.forEach((ota) => {
+        const count = countHotelsInOTA(country.mapping, ota);
+        console.log(
+          `Total number of hotels in ${ota} (${country.name}): ${count}`
+        );
+      });
+    });
   } catch (error) {
     logger.error("Error during execution:", error);
   }

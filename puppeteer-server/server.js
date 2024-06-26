@@ -1,6 +1,6 @@
 const { logger } = require("./logger");
 const { exec } = require("child_process");
-const { getHotelMapping } = require("./hotelMappingLoader");
+const { loadHotelMapping } = require("./hotelNameMapper");
 const fs = require("fs");
 const fsExtra = require("fs-extra");
 const express = require("express");
@@ -34,15 +34,21 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, "./frontend")));
 
-let hotelMapping = {};
+let uaeHotelMapping = {};
+let georgiaHotelMapping = {};
 
-getHotelMapping()
-  .then((mapping) => {
-    hotelMapping = mapping;
-  })
-  .catch((error) => {
-    logger.error("Error initializing hotel mapping:", error);
-  });
+// Load both UAE and Georgia mappings
+async function initializeMappings() {
+  try {
+    uaeHotelMapping = await loadHotelMapping("UAE");
+    georgiaHotelMapping = await loadHotelMapping("Georgia");
+    logger.info("Hotel mappings for UAE and Georgia initialized.");
+  } catch (error) {
+    logger.error("Error initializing hotel mappings:", error);
+  }
+}
+
+initializeMappings();
 
 async function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -86,13 +92,21 @@ app.post("/api/start-session", upload.single("file"), async (req, res) => {
     }
 
     let aggregatedData = aggregateData(scrapeResult);
+
+    const country =
+      scrapeResult.destinationAndStartDate.destination.toLowerCase();
+    const actualHotelMapping =
+      country === "uae" ? uaeHotelMapping : georgiaHotelMapping;
+
     await processAndUpdateFile(
       tempFilePath,
       aggregatedData,
       scrapeResult,
       outputFilePath,
-      updateMode
+      updateMode,
+      actualHotelMapping
     );
+
     logger.info(`Updated file saved to: ${outputFilePath}`);
 
     exec(`start excel "${outputFilePath}"`, (error) => {
@@ -163,7 +177,8 @@ async function processAndUpdateFile(
   aggregatedData,
   scrapeResult,
   outputFilePath,
-  updateMode
+  updateMode,
+  actualHotelMapping
 ) {
   const maxRetries = 10;
   const retryDelay = 5000; // 5 seconds
@@ -171,7 +186,7 @@ async function processAndUpdateFile(
 
   while (attempt < maxRetries) {
     try {
-      const excelManager = new ExcelManager(tempFilePath, hotelMapping);
+      const excelManager = new ExcelManager(tempFilePath, actualHotelMapping);
       await excelManager.loadTemplate();
       const worksheet = excelManager.getWorksheet(1);
       processAggregatedData(

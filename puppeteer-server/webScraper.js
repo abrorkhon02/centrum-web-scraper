@@ -16,6 +16,7 @@ class WebScraper {
       args: ["--disable-features=site-per-process", "--start-maximized"],
     });
   }
+
   async closeBrowser() {
     if (this.browser) {
       await this.browser.close();
@@ -88,7 +89,6 @@ class WebScraper {
         const pager = await page.$(".pager");
         if (!pager) {
           console.log("WARNING: No pager found, but still proceeding");
-          // return lastKnownPageNumber;
         }
 
         await page.waitForSelector(nextPageSelector, {
@@ -130,7 +130,7 @@ class WebScraper {
   async goToNextPage(page, nextPageNum) {
     const maxRetries = 10;
     let attempt = 0;
-    const retryDelay = 1000;
+    const retryDelay = 4000;
 
     while (attempt < maxRetries) {
       try {
@@ -161,9 +161,12 @@ class WebScraper {
         );
 
         if (attempt < maxRetries) {
-          const delayTime = retryDelay * Math.pow(2, attempt - 1); // Exponential backoff
-          console.log(`Retrying in several seconds...`);
-          await delay(delayTime);
+          logger.info(
+            `Retrying in ${
+              retryDelay / 1000
+            } seconds... If the Excel sheet is opened, please close it.`
+          );
+          await delay(retryDelay);
         } else {
           throw new Error(
             `Failed to navigate to page ${nextPageNum} after ${maxRetries} attempts`
@@ -350,11 +353,12 @@ class WebScraper {
     const webpages = this.webpages;
     return await page.evaluate(
       (pageUrl, webpages) => {
-        function determineAggregatorIndex(pageUrl) {
-          return webpages.findIndex((webpage) => webpage.url === pageUrl);
+        function determineAggregator(pageUrl) {
+          const webpage = webpages.find((webpage) => webpage.url === pageUrl);
+          return webpage ? webpage.name : "Unknown Webpage";
         }
 
-        const aggregatorIndex = determineAggregatorIndex(pageUrl);
+        const aggregator = determineAggregator(pageUrl);
         const rows = Array.from(
           document.querySelectorAll(".resultset .res tbody tr")
         );
@@ -413,7 +417,7 @@ class WebScraper {
               price,
               roomType,
               priceType,
-              aggregatorIndex,
+              aggregator,
             };
           })
           .filter((entry) => entry !== null);
@@ -421,11 +425,6 @@ class WebScraper {
       url,
       webpages
     );
-  }
-
-  determineAggregatorIndex(pageUrl) {
-    const webpage = this.webpages.find((webpage) => webpage.url === pageUrl);
-    return webpage ? this.webpages.indexOf(webpage) : -1;
   }
 }
 

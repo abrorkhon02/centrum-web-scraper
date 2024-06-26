@@ -3,9 +3,9 @@ const excel = require("exceljs");
 const { logger, hotelMatchLogger, hotelNotMatchLogger } = require("./logger");
 
 class ExcelManager {
-  constructor(templatePath, hotelMapping) {
+  constructor(templatePath, actualHotelMapping) {
     this.templatePath = templatePath;
-    this.hotelMapping = hotelMapping;
+    this.actualHotelMapping = actualHotelMapping;
     this.workbook = new excel.Workbook();
     this.lastUsedRow = 2;
   }
@@ -36,42 +36,47 @@ class ExcelManager {
     return this.workbook.getWorksheet(name);
   }
 
-  findOrAddHotelBlock(worksheet, hotelName, destination, aggregatorIndex) {
-    const pageNames = [
-      "Online-Centrum",
-      "Kompastour",
-      "FunSun",
-      "Kazunion",
-      "PrestigeUZ",
-      "AsiaLuxe",
-      "EasyBooking",
-    ];
-
-    const currentAggregator = pageNames[aggregatorIndex];
+  findOrAddHotelBlock(worksheet, hotelName, destination, aggregator) {
+    const currentAggregator = aggregator;
     logger.info(
       `Processing hotel: ${hotelName} for destination: ${destination} on page: ${currentAggregator}`
     );
 
     if (currentAggregator !== "Online-Centrum") {
       logger.info(`Performing name mapping for ${currentAggregator}`);
-      return this.findHotelInMapping(worksheet, hotelName, currentAggregator);
+      return this.findHotelInMapping(
+        worksheet,
+        hotelName,
+        currentAggregator,
+        this.actualHotelMapping
+      );
     }
 
     logger.info("Current OTA is Online-Centrum, skipping hotel mapping");
     return this.findHotelInTemplate(worksheet, hotelName);
   }
 
-  findHotelInMapping(worksheet, hotelName, currentAggregator) {
+  findHotelInMapping(
+    worksheet,
+    hotelName,
+    currentAggregator,
+    actualHotelMapping
+  ) {
+    if (!hotelName) {
+      logger.warn("Hotel name is null or undefined, skipping.");
+      return;
+    }
+
     const normalizedHotelName = this.normalizeHotelName(hotelName);
     logger.info(
       `Searching for hotel in mapping: ${hotelName} (normalized: ${normalizedHotelName}) for aggregator: ${currentAggregator}`
     );
 
-    const hotelMapping = this.hotelMapping[currentAggregator];
-
-    if (hotelMapping) {
-      const templateHotelName = hotelMapping[normalizedHotelName]
-        ? hotelMapping[normalizedHotelName][0]
+    if (actualHotelMapping[currentAggregator]) {
+      const templateHotelName = actualHotelMapping[currentAggregator][
+        normalizedHotelName
+      ]
+        ? actualHotelMapping[currentAggregator][normalizedHotelName][0]
         : null;
 
       if (templateHotelName) {
@@ -80,12 +85,26 @@ class ExcelManager {
         );
 
         let foundRow = null;
+        let emptyCellCount = 0;
         worksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
           if (rowNumber === 1) return;
 
           let cell = row.getCell(1);
           if (cell.isMerged && cell.master && rowNumber !== cell.master.row) {
             return;
+          }
+
+          if (!cell.value) {
+            emptyCellCount++;
+            if (emptyCellCount >= 3) {
+              logger.info(
+                "Encountered 3 or more consecutive empty cells, stopping processing."
+              );
+              return false;
+            }
+            return;
+          } else {
+            emptyCellCount = 0;
           }
 
           if (
@@ -114,8 +133,13 @@ class ExcelManager {
   }
 
   findHotelInTemplate(worksheet, hotelName) {
+    if (!hotelName) {
+      logger.warn("Hotel name is null or undefined!");
+    }
+
     const normalizedInputName = this.normalizeHotelName(hotelName);
     let foundRow = null;
+    let emptyCellCount = 0;
 
     worksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
       if (rowNumber === 1) return;
@@ -123,6 +147,20 @@ class ExcelManager {
       if (cell.isMerged && cell.master && rowNumber !== cell.master.row) {
         return;
       }
+
+      if (!cell.value) {
+        emptyCellCount++;
+        if (emptyCellCount >= 3) {
+          logger.info(
+            "Encountered 3 or more consecutive empty cells, stopping processing."
+          );
+          return false;
+        }
+        return;
+      } else {
+        emptyCellCount = 0;
+      }
+
       const normalizedTemplateName = this.normalizeHotelName(cell.value);
 
       if (cell.value && normalizedTemplateName === normalizedInputName) {
@@ -217,9 +255,10 @@ class ExcelManager {
     normalized = normalized
       .toLowerCase()
       .replace(
-        /\b(dbl|double|twin|2\s*adl?s?|2adult?|2pax|king|wall)\b/g,
+        /\b(dbl|double|2\s*adl?s?|2adult?|2pax|king|queen|wall)\b/g,
         "double"
       )
+      .replace(/\b(twin)\b/g, "double")
       .replace(/\b(econom(?:y)?|standard|budget|std)\b/g, "standard")
       .replace(/\broom\b/g, "")
       .replace(/\bsingle\b/g, "single")
@@ -249,7 +288,7 @@ class ExcelManager {
       worksheet,
       hotel,
       destination,
-      datesOffers[0].aggregatorIndex
+      datesOffers[0].aggregator
     );
 
     // Populate dates only if not in update mode or dates are not already populated
@@ -279,22 +318,22 @@ class ExcelManager {
 
     logger.info(`Date row index found: ${rowIndex}`);
     let row = worksheet.getRow(rowIndex);
-    const priceCol = 3 + offer.aggregatorIndex; // Ensure correct column for OTA
-    let roomTypeCol;
+    const aggregatorColumns = {
+      "Online-Centrum": 3,
+      Kompastour: 4,
+      FunSun: 5,
+      Kazunion: 6,
+      PrestigeUZ: 7,
+      AsiaLuxe: 8,
+      EasyBooking: destination.toLowerCase() === "uae" ? 9 : 8,
+    };
+    const priceCol = aggregatorColumns[offer.aggregator] || 11; // Default to 11 (outside of the template bounds) if aggregator not found
+    const roomTypeCol =
+      destination.toLowerCase() === "uae" || destination.toLowerCase() === "оаэ"
+        ? 10
+        : 9; // Either it's UAE or Georgia
 
-    if (
-      destination.toLowerCase() === "uae" ||
-      destination.toLowerCase() === "оаэ"
-    ) {
-      roomTypeCol = 10;
-    } else if (
-      destination.toLowerCase() === "georgia" ||
-      destination.toLowerCase() === "грузия"
-    ) {
-      roomTypeCol = 9;
-    }
-    logger.info(`The Roomtype col is: ${roomTypeCol}`);
-
+    logger.info(`The RoomType col is: ${roomTypeCol}`);
     let existingRoomType = row.getCell(roomTypeCol).value || "";
     logger.info(`Existing room type fetched: '${existingRoomType}'`);
 
@@ -325,7 +364,11 @@ class ExcelManager {
     if (updateMode) {
       // Only update the price if it is different from the existing price
       if (currentPriceValue !== newPriceValue) {
+        logger.info(
+          `Updating cell at row ${rowIndex} column ${priceCol} from ${currentPriceValue} to ${newPriceValue}`
+        );
         row.getCell(priceCol).value = newPriceValue;
+        // row.getCell(priceCol).font = { color: { argb: "FFFF0000" } }; // Red text color
       }
     } else {
       if (similarity < 0.8 && existingRoomType) {
@@ -348,7 +391,11 @@ class ExcelManager {
     for (let i = 0; i < 18; i++) {
       let row = worksheet.getRow(startRow + i);
       let cellDate = row.getCell(2).value;
+      logger.info(`Checking date at row ${startRow + i}: ${cellDate}`);
       if (cellDate === targetDateStr) {
+        logger.info(
+          `Match found for date ${targetDateStr} at row ${startRow + i}`
+        );
         return startRow + i;
       }
     }
