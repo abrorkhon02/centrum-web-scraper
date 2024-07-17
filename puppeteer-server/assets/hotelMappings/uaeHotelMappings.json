@@ -13,7 +13,7 @@
       "hyatt place dubai/wasl district 4*"
     ],
     "copthorne hotel dubai 4*": [
-      "copthorne hotel dubai. 4*"
+      "copthorne hotel dubai 4*"
     ],
     "citymax hotel bur dubai 3*": [
       "citymax bur dubai 3*"
@@ -28,21 +28,22 @@
       "citymax business bay 4*"
     ],
     "fortune grand hotel 4*": [
-      "fortune grand hotel. 4*"
+      "fortune grand hotel 4*"
     ],
     "lemon tree hotel dubai 4*": [
       "lemon tree hotel dubai 4*"
     ],
     "novotel dubai al barsha 4*": [
-      "novotel dubai al barsha. 4*"
+      "novotel dubai al barsha 4*"
     ],
     "na": [
-      "comfort inn hotel. 3*",
+      "comfort inn hotel 3*",
       "studio m arabian plaza hotel apartment 3*",
-      "ramada downtown dubai. apart dlx"
+      "ramada downtown dubai apart dlx",
+      "royal hotel 3*"
     ],
     "best western plus pearl creek hotel 4*": [
-      "best western plus pearl creek hotel. 4*"
+      "best western plus pearl creek hotel 4*"
     ],
     "ibis al barsha 3*": [
       "ibis al barsha dubai 3*"
@@ -56,11 +57,11 @@
     "arabian park edge by rotana 3*": [
       "arabian park edge by rotana 3*"
     ],
-    "md hotel by gewan formerly cassells 4*": [
+    "md hotel 4*": [
       "md hotel dubai 4*"
     ],
     "grand excelsior hotel bur dubai 4*": [
-      "grand excelsior bur dubai. 4*"
+      "grand excelsior bur dubai 4*"
     ],
     "rose park al barsha 4*": [
       "rose park al barsha 4*"
@@ -69,7 +70,7 @@
       "millennium central downtown 4*"
     ],
     "al khoory executive hotel 3*": [
-      "al khoory executive. 3*"
+      "al khoory executive 3*"
     ],
     "damac hills 2 hotel, an edge by rotana hotel 3*": [
       "damac hills 2 hotel edge by rotana 3*"
@@ -78,9 +79,9 @@
       "movenpick hotel jumeirah beach 5*"
     ],
     "rose rayhaan by rotana 4*": [
-      "rose rayhaan by rotana. 4*"
+      "rose rayhaan by rotana 4*"
     ],
-    "hyatt place dubai baniyas square 4*": [
+    "hyatt place baniyas square 4*": [
       "hyatt place dubai baniyas square 4*"
     ],
     "hyatt place dubai al rigga 4*": [
@@ -93,7 +94,7 @@
       "riu dubai 4*"
     ],
     "centara mirage beach resort dubai 4*": [
-      "centara mirage beach dubai 4*"
+      "centara mirage beach resort dubai 4*"
     ],
     "swissotel al ghurair dubai 5*": [
       "swissotel al ghurair dubai 5*"
@@ -107,14 +108,14 @@
     "gulf court hotel business bay 4*": [
       "gulf court hotel business bay 4*"
     ],
-    "millennium al barsha 4*": [
+    "millennium al barsha mall of the emirates 4*": [
       "millennium al barsha 4*"
     ],
     "swissotel al murooj hotel 5*": [
       "swissotel al murooj 5*"
     ],
     "donatello hotel dubai 4*": [
-      "donatello hotel dubai. 4*"
+      "donatello hotel dubai 4*"
     ],
     "aloft palm jumeirah 4*": [
       "aloft palm jumeirah 4*"
@@ -123,13 +124,13 @@
       "tryp by wyndham dubai 4*"
     ],
     "amwaj rotana jumeirah beach 5*": [
-      "amwaj rotana jumeirah beach. 5*"
+      "amwaj rotana jumeirah beach 5*"
     ],
     "signature 1 hotel tecom 4*": [
       "signature hotel tecom 4*"
     ],
     "wyndham dubai marina 4*": [
-      "wyndham dubai marina. 4*"
+      "wyndham dubai marina 4*"
     ],
     "stella di mare dubai 5*": [
       "stella di mare dubai marina hotel 5*"
@@ -138,7 +139,7 @@
       "ramada hotel & suites by wyndham jbr 4*"
     ],
     "the retreat palm dubai mgallery by sofitel 5*": [
-      "the retreat palm dubai. 5*"
+      "the retreat palm dubai 5*"
     ],
     "hilton dubai the walk 4*": [
       "hilton dubai the walk 4*"
@@ -162,7 +163,7 @@
       "nh dubai the palm 4*"
     ],
     "marina byblos hotel 4*": [
-      "marina byblos. 4*"
+      "marina byblos 4*"
     ],
     "holiday inn dubai al barsha 4*": [
       "holiday inn dubai-al barsha 4*"
@@ -174,19 +175,16 @@
       "canal central business bay 5*"
     ],
     "rove downtown dubai 3*": [
-      "rove downtown dubai. 3*"
+      "rove downtown dubai 3*"
     ],
     "holiday inn and suites dubai science park 4*": [
       "holiday inn & suites dubai science park al barsha 4*"
     ],
-    "voco monaco dubai (ex. cote d'azur hotel monaco) 5*": [
+    "voco monaco dubai 5*": [
       "voco monaco dubai 5*"
     ],
     "blue beach tower jumeirah beach residenceapartment deluxe": [
       "blue beach tower 5*"
-    ],
-    "mercure hotel apartments dubai barsha heights apartment": [
-      "mercure hotel apartmentsaprt"
     ],
     "the s hotel al barsha 4*": [
       "the s hotel al barsha 4*"
@@ -203,8 +201,8 @@
     "the first collection hotel business bay 4*": [
       "the first collection business bay 4*"
     ],
-    "heritage hotel, autograph collection (ex. manzil downtown) 4*": [
-      "manzil downtown dubai. 4*"
+    "heritage hotel, autograph collection 4*": [
+      "manzil downtown dubai 4*"
     ],
     "palazzo versace 5*": [
       "palazzo versace dubai 5*"
@@ -213,7 +211,7 @@
       "ja beach hotel 5*"
     ],
     "waldorf astoria dubai palm jumeirah 5*": [
-      "waldorf astoria palm jumeirah. 5*"
+      "waldorf astoria palm jumeirah 5*"
     ],
     "sheraton jumeirah beach resort 5*": [
       "sheraton jumeirah beach resort 5*"
@@ -225,7 +223,7 @@
       "habtoor grand resort, autograph collection 5*"
     ],
     "armani hotel dubai 5*": [
-      "armani hotel dubai. 5*"
+      "armani hotel dubai 5*"
     ],
     "le meridien mina seyahi beach resort & marina 5*": [
       "le meridien mina seyahi beach resort & marina 5*"
@@ -252,7 +250,7 @@
       "atlantis the palm dubai 5*"
     ],
     "one & only the palm dubai 5*": [
-      "one & only the palm. 5*"
+      "one & only the palm 5*"
     ],
     "raffles the palm 5*": [
       "raffles the palm 5*"
@@ -267,7 +265,7 @@
       "jumeirah beach hotel 5*"
     ],
     "sofitel the palm 5*": [
-      "sofitel the palm. 5*"
+      "sofitel the palm 5*"
     ],
     "anantara dubai palm jumeirah 5*": [
       "anantara dubai the palm resort & spa 5*"
@@ -303,13 +301,13 @@
       "taj exotica resort & spa, the palm 5*"
     ],
     "the oberoi beach resort al zorah 5*": [
-      "the oberoi dubai. 5*"
+      "the oberoi dubai 5*"
     ],
     "bulgari hotel & resorts dubai 5*": [
       "bvlgari resort dubai 5*"
     ],
-    "the st. regis dubai, the palm 5*": [
-      "the st. regis dubai, the palm 5*"
+    "the st regis dubai, the palm 5*": [
+      "the st regis dubai, the palm 5*"
     ],
     "mandarin oriental jumeira, dubai 5*": [
       "mandarin oriental jumeirah dubai 5*"
@@ -331,6 +329,39 @@
     ],
     "w dubai the palm 5*": [
       "w dubai - the palm 5*"
+    ],
+    "signature hotel al barsha 4*": [
+      "signature hotel al barsha 4*"
+    ],
+    "golden tulip deira hotel 4*": [
+      "golden tulip deira 4*"
+    ],
+    "millennium plaza downtown hotel 5*": [
+      "millennium plaza downtown hotel 5*"
+    ],
+    "rose plaza hotel al barsha 3*": [
+      "rose plaza hotel al barsha 3*"
+    ],
+    "signature hotel apartments & spa marina apartment": [
+      "signature hotel apartments & spa marina aprt"
+    ],
+    "dusit d2 kenz hotel dubai 4*": [
+      "dusit d2 kenz hotel dubai 4*"
+    ],
+    "holiday inn express internet city 3*": [
+      "holiday inn express internet city 3*"
+    ],
+    "al khoory atrium hotel 4*": [
+      "al khoory atrium 4*"
+    ],
+    "rixos bab al bahr 5*": [
+      "rixos bab al bahr 5*"
+    ],
+    "mercure hotel apartments dubai barsha heights apartment": [
+      "mercure hotel apartments aprt"
+    ],
+    "holiday inn dubai al maktoum airport 4*": [
+      "holiday inn dubai al-maktoum airport, an ihg hotel 4*"
     ]
   },
   "FunSun": {
@@ -347,7 +378,7 @@
       "hyatt place dubai/wasl district 4*"
     ],
     "copthorne hotel dubai 4*": [
-      "copthorne hotel dubai. 4*"
+      "copthorne hotel dubai 4*"
     ],
     "citymax hotel bur dubai 3*": [
       "citymax bur dubai 3*"
@@ -362,19 +393,19 @@
       "citymax business bay 4*"
     ],
     "fortune grand 4*": [
-      "fortune grand hotel. 4*"
+      "fortune grand hotel 4*"
     ],
     "lemon tree hotel 4*": [
       "lemon tree hotel dubai 4*"
     ],
     "novotel dubai al barsha 4*": [
-      "novotel dubai al barsha. 4*"
+      "novotel dubai al barsha 4*"
     ],
     "comfort inn 3*": [
-      "comfort inn hotel. 3*"
+      "comfort inn hotel 3*"
     ],
     "best western plus pearl creek 4*": [
-      "best western plus pearl creek hotel. 4*"
+      "best western plus pearl creek hotel 4*"
     ],
     "ibis al barsha 3*": [
       "ibis al barsha dubai 3*"
@@ -395,7 +426,7 @@
       "md hotel dubai 4*"
     ],
     "grand excelsior bur dubai 4*": [
-      "grand excelsior bur dubai. 4*"
+      "grand excelsior bur dubai 4*"
     ],
     "rose park hotel 4*": [
       "rose park al barsha 4*"
@@ -404,7 +435,7 @@
       "millennium central downtown 4*"
     ],
     "al khoory executive 3*": [
-      "al khoory executive. 3*"
+      "al khoory executive 3*"
     ],
     "damac hills 2 hotel edge by rotana 3*": [
       "damac hills 2 hotel edge by rotana 3*"
@@ -413,9 +444,9 @@
       "movenpick hotel jumeirah beach 5*"
     ],
     "rose rayhaan by rotana 4*": [
-      "rose rayhaan by rotana. 4*"
+      "rose rayhaan by rotana 4*"
     ],
-    "hyatt place dubai baniyas square 4*": [
+    "hyatt place baniyas square 4*": [
       "hyatt place dubai baniyas square 4*"
     ],
     "hyatt place dubai al rigga 4*": [
@@ -428,7 +459,7 @@
       "riu dubai 4*"
     ],
     "centara mirage beach resort dubai 4*": [
-      "centara mirage beach dubai 4*"
+      "centara mirage beach resort dubai 4*"
     ],
     "swissotel al ghurair dubai 5*": [
       "swissotel al ghurair dubai 5*"
@@ -449,7 +480,7 @@
       "swissotel al murooj 5*"
     ],
     "donatello hotel dubai 4*": [
-      "donatello hotel dubai. 4*"
+      "donatello hotel dubai 4*"
     ],
     "aloft palm jumeirah 4*": [
       "aloft palm jumeirah 4*"
@@ -458,25 +489,25 @@
       "tryp by wyndham dubai 4*"
     ],
     "amwaj rotana jumeirah beach dubai 5*": [
-      "amwaj rotana jumeirah beach. 5*"
+      "amwaj rotana jumeirah beach 5*"
     ],
     "signature 1 hotel tecom 4*": [
       "signature hotel tecom 4*"
     ],
     "wyndham dubai marina 4*": [
-      "wyndham dubai marina. 4*"
+      "wyndham dubai marina 4*"
     ],
     "stella di mare dubai marina 5*": [
       "stella di mare dubai marina hotel 5*"
     ],
     "ramada downtown dubai 4*": [
-      "ramada downtown dubai. apart dlx"
+      "ramada downtown dubai apart dlx"
     ],
     "ramada and suites by wyndham dubai jbr 4*": [
       "ramada hotel & suites by wyndham jbr 4*"
     ],
     "the retreat palm dubai mgallery by sofitel 5*": [
-      "the retreat palm dubai. 5*"
+      "the retreat palm dubai 5*"
     ],
     "hilton dubai the walk 4*": [
       "hilton dubai the walk 4*"
@@ -500,7 +531,7 @@
       "nh dubai the palm 4*"
     ],
     "marina byblos 4*": [
-      "marina byblos. 4*"
+      "marina byblos 4*"
     ],
     "holiday inn dubai al barsha 4*": [
       "holiday inn dubai-al barsha 4*"
@@ -512,7 +543,7 @@
       "canal central business bay 5*"
     ],
     "rove downtown dubai 3*": [
-      "rove downtown dubai. 3*"
+      "rove downtown dubai 3*"
     ],
     "holiday inn & suites dubai science park al barsha 4*": [
       "holiday inn & suites dubai science park al barsha 4*"
@@ -522,9 +553,6 @@
     ],
     "blue beach tower apart hotel": [
       "blue beach tower 5*"
-    ],
-    "mercure hotel suites & apartments, barsha heights 4*": [
-      "mercure hotel apartmentsaprt"
     ],
     "the s hotel al barsha dubai 4*": [
       "the s hotel al barsha 4*"
@@ -542,7 +570,7 @@
       "the first collection business bay 4*"
     ],
     "manzil downtown 4*": [
-      "manzil downtown dubai. 4*"
+      "manzil downtown dubai 4*"
     ],
     "palazzo versace dubai 5*": [
       "palazzo versace dubai 5*"
@@ -551,7 +579,7 @@
       "ja beach hotel 5*"
     ],
     "waldorf astoria dubai palm jumeirah 5*": [
-      "waldorf astoria palm jumeirah. 5*"
+      "waldorf astoria palm jumeirah 5*"
     ],
     "sheraton jumeirah beach resort 5*": [
       "sheraton jumeirah beach resort 5*"
@@ -563,7 +591,7 @@
       "habtoor grand resort, autograph collection 5*"
     ],
     "armani hotel 5*": [
-      "armani hotel dubai. 5*"
+      "armani hotel dubai 5*"
     ],
     "le meridien mina seyahi beach resort & marina 5*": [
       "le meridien mina seyahi beach resort & marina 5*"
@@ -590,7 +618,7 @@
       "atlantis the palm dubai 5*"
     ],
     "one & only the palm 5*": [
-      "one & only the palm. 5*"
+      "one & only the palm 5*"
     ],
     "raffles the palm dubai 5*": [
       "raffles the palm 5*"
@@ -605,7 +633,7 @@
       "jumeirah beach hotel 5*"
     ],
     "sofitel dubai the palm resort & spa 5*": [
-      "sofitel the palm. 5*"
+      "sofitel the palm 5*"
     ],
     "anantara the palm dubai resort 5*": [
       "anantara dubai the palm resort & spa 5*"
@@ -641,13 +669,13 @@
       "taj exotica resort & spa, the palm 5*"
     ],
     "the oberoi beach resort al zorah 5*": [
-      "the oberoi dubai. 5*"
+      "the oberoi dubai 5*"
     ],
     "bulgari resort dubai 5*": [
       "bvlgari resort dubai 5*"
     ],
-    "the st. regis dubai the palm 5*": [
-      "the st. regis dubai, the palm 5*"
+    "the st regis dubai the palm 5*": [
+      "the st regis dubai, the palm 5*"
     ],
     "mandarin oriental jumeira dubai 5*": [
       "mandarin oriental jumeirah dubai 5*"
@@ -669,6 +697,40 @@
     ],
     "w dubai - the palm 5*": [
       "w dubai - the palm 5*"
+    ],
+    "signature hotel al barsha 4*": [
+      "signature hotel al barsha 4*"
+    ],
+    "golden tulip deira 4*": [
+      "golden tulip deira 4*"
+    ],
+    "millennium plaza downtown hotel 5*": [
+      "millennium plaza downtown hotel 5*"
+    ],
+    "rose plaza hotel al barsha 3*": [
+      "rose plaza hotel al barsha 3*"
+    ],
+    "signature hotel apartments & spa marina 4": [
+      "signature hotel apartments & spa marina aprt"
+    ],
+    "dusit d2 kenz hotel dubai 4*": [
+      "dusit d2 kenz hotel dubai 4*"
+    ],
+    "royal hotel 3*": [
+      "royal hotel 3*"
+    ],
+    "holiday inn express dubai internet city 3*": [
+      "holiday inn express internet city 3*"
+    ],
+    "al khoory atrium hotel - al barsha 4*": [
+      "al khoory atrium 4*"
+    ],
+    "rixos bab al bahr 5*": [
+      "rixos bab al bahr 5*"
+    ],
+    "na": [
+      "mercure hotel apartments aprt",
+      "holiday inn dubai al-maktoum airport, an ihg hotel 4*"
     ]
   },
   "EasyBooking": {
@@ -685,7 +747,7 @@
       "hyatt place dubai/wasl district 4*"
     ],
     "copthorne hotel dubai 4*": [
-      "copthorne hotel dubai. 4*"
+      "copthorne hotel dubai 4*"
     ],
     "citymax bur dubai 3*": [
       "citymax bur dubai 3*"
@@ -700,25 +762,26 @@
       "citymax business bay 4*"
     ],
     "na": [
-      "fortune grand hotel. 4*",
+      "fortune grand hotel 4*",
       "city avenue hotel 3*",
-      "grand excelsior bur dubai. 4*",
+      "grand excelsior bur dubai 4*",
       "the first collection business bay 4*",
-      "manzil downtown dubai. 4*",
+      "manzil downtown dubai 4*",
       "kempinski central avenue dubai 5*",
-      "the st. regis dubai, the palm 5*"
+      "the st regis dubai, the palm 5*",
+      "holiday inn dubai al-maktoum airport, an ihg hotel 4*"
     ],
     "lemon tree hotel 4*": [
       "lemon tree hotel dubai 4*"
     ],
     "novotel al barsha 4*": [
-      "novotel dubai al barsha. 4*"
+      "novotel dubai al barsha 4*"
     ],
     "comfort inn 3*": [
-      "comfort inn hotel. 3*"
+      "comfort inn hotel 3*"
     ],
     "best western plus pearl creek 4*": [
-      "best western plus pearl creek hotel. 4*"
+      "best western plus pearl creek hotel 4*"
     ],
     "ibis al barsha dubai 3*": [
       "ibis al barsha dubai 3*"
@@ -742,7 +805,7 @@
       "millennium central downtown 4*"
     ],
     "al khoory executive hotel 3*": [
-      "al khoory executive. 3*"
+      "al khoory executive 3*"
     ],
     "damac hills 2 edge by rotana 3*": [
       "damac hills 2 hotel edge by rotana 3*"
@@ -751,7 +814,7 @@
       "movenpick hotel jumeirah beach 5*"
     ],
     "rose rayhaan by rotana 4*": [
-      "rose rayhaan by rotana. 4*"
+      "rose rayhaan by rotana 4*"
     ],
     "hyatt place dubai baniyas square 4*": [
       "hyatt place dubai baniyas square 4*"
@@ -759,14 +822,14 @@
     "hyatt place dubai al rigga 4*": [
       "hyatt place dubai/ al rigga 4*"
     ],
-    "delta hotels by marriott, jumeirah beach, dubai (ex. ramada plaz 4*": [
+    "delta hotels by marriott, jumeirah beach, dubai (ex ramada plaz 4*": [
       "delta hotels by marriott, jumeirah beach dubai 4*"
     ],
     "riu dubai 4*": [
       "riu dubai 4*"
     ],
     "centara mirage beach resort dubai 4*": [
-      "centara mirage beach dubai 4*"
+      "centara mirage beach resort dubai 4*"
     ],
     "swissotel al ghurair dubai 5*": [
       "swissotel al ghurair dubai 5*"
@@ -787,7 +850,7 @@
       "swissotel al murooj 5*"
     ],
     "donatello hotel 4*": [
-      "donatello hotel dubai. 4*"
+      "donatello hotel dubai 4*"
     ],
     "aloft palm jumeirah 4*": [
       "aloft palm jumeirah 4*"
@@ -796,25 +859,25 @@
       "tryp by wyndham dubai 4*"
     ],
     "amwaj rotana jumeirah beach - dubai 5*": [
-      "amwaj rotana jumeirah beach. 5*"
+      "amwaj rotana jumeirah beach 5*"
     ],
     "signature hotel tecom 4*": [
       "signature hotel tecom 4*"
     ],
     "wyndham dubai marina 4*": [
-      "wyndham dubai marina. 4*"
+      "wyndham dubai marina 4*"
     ],
     "stella di mare dubai marina 5*": [
       "stella di mare dubai marina hotel 5*"
     ],
     "ramada downtown dubai apart dlx": [
-      "ramada downtown dubai. apart dlx"
+      "ramada downtown dubai apart dlx"
     ],
     "ramada hotel & suites by wyndham jbr 4*": [
       "ramada hotel & suites by wyndham jbr 4*"
     ],
     "the retreat palm dubai 5*": [
-      "the retreat palm dubai. 5*"
+      "the retreat palm dubai 5*"
     ],
     "hilton dubai the walk 4*": [
       "hilton dubai the walk 4*"
@@ -838,7 +901,7 @@
       "nh dubai the palm 4*"
     ],
     "marina byblos hotel 4*": [
-      "marina byblos. 4*"
+      "marina byblos 4*"
     ],
     "holiday inn dubai-al barsha 4*": [
       "holiday inn dubai-al barsha 4*"
@@ -850,7 +913,7 @@
       "canal central business bay 5*"
     ],
     "rove downtown 3*": [
-      "rove downtown dubai. 3*"
+      "rove downtown dubai 3*"
     ],
     "holiday inn & suites dubai science park 4*": [
       "holiday inn & suites dubai science park al barsha 4*"
@@ -860,9 +923,6 @@
     ],
     "blue beach tower 5*": [
       "blue beach tower 5*"
-    ],
-    "mercure hotel apartmentsapr": [
-      "mercure hotel apartmentsaprt"
     ],
     "the s hotel al barsha dubai 4*": [
       "the s hotel al barsha 4*"
@@ -883,7 +943,7 @@
       "ja beach hotel 5*"
     ],
     "waldorf astoria palm dubai jumeirah 5*": [
-      "waldorf astoria palm jumeirah. 5*"
+      "waldorf astoria palm jumeirah 5*"
     ],
     "sheraton jumeirah beach resort 5*": [
       "sheraton jumeirah beach resort 5*"
@@ -895,7 +955,7 @@
       "habtoor grand resort, autograph collection 5*"
     ],
     "armani hotel dubai 5*": [
-      "armani hotel dubai. 5*"
+      "armani hotel dubai 5*"
     ],
     "le meridien mina seyahi beach resort & waterpark 5*": [
       "le meridien mina seyahi beach resort & marina 5*"
@@ -922,7 +982,7 @@
       "atlantis the palm dubai 5*"
     ],
     "one & only the palm 5*": [
-      "one & only the palm. 5*"
+      "one & only the palm 5*"
     ],
     "raffles the palm 5*": [
       "raffles the palm 5*"
@@ -934,7 +994,7 @@
       "jumeirah beach hotel 5*"
     ],
     "sofitel the palm 5*": [
-      "sofitel the palm. 5*"
+      "sofitel the palm 5*"
     ],
     "anantara dubai the palm resort 5*": [
       "anantara dubai the palm resort & spa 5*"
@@ -970,7 +1030,7 @@
       "taj exotica resort & spa, the palm 5*"
     ],
     "the oberoi al zohran 5*": [
-      "the oberoi dubai. 5*"
+      "the oberoi dubai 5*"
     ],
     "bvlgari resort dubai 5*": [
       "bvlgari resort dubai 5*"
@@ -995,6 +1055,39 @@
     ],
     "w dubai - the palm 5*": [
       "w dubai - the palm 5*"
+    ],
+    "signature hotel al barsha 4*": [
+      "signature hotel al barsha 4*"
+    ],
+    "golden tulip deira 4*": [
+      "golden tulip deira 4*"
+    ],
+    "millennium plaza downtown 5*": [
+      "millennium plaza downtown hotel 5*"
+    ],
+    "rose plaza hotel al barsha 3*": [
+      "rose plaza hotel al barsha 3*"
+    ],
+    "signature hotel apartments marina apr": [
+      "signature hotel apartments & spa marina aprt"
+    ],
+    "dusit d2 kenz hotel dubai 4*": [
+      "dusit d2 kenz hotel dubai 4*"
+    ],
+    "royal hotel 3*": [
+      "royal hotel 3*"
+    ],
+    "holiday inn express internet city 3*": [
+      "holiday inn express internet city 3*"
+    ],
+    "al khoory atrium hotel 4*": [
+      "al khoory atrium 4*"
+    ],
+    "rixos bab al bahr 5*": [
+      "rixos bab al bahr 5*"
+    ],
+    "mercure hotel apartments apr": [
+      "mercure hotel apartments aprt"
     ]
   },
   "PrestigeUZ": {
@@ -1011,15 +1104,15 @@
       "hyatt place dubai/wasl district 4*"
     ],
     "copthorne hotel dubai ****": [
-      "copthorne hotel dubai. 4*"
+      "copthorne hotel dubai 4*"
     ],
     "citymax hotel bur dubai ***": [
       "citymax bur dubai 3*"
     ],
     "na": [
       "flora al barsha 4*",
-      "novotel dubai al barsha. 4*",
-      "comfort inn hotel. 3*",
+      "novotel dubai al barsha 4*",
+      "comfort inn hotel 3*",
       "ibis al barsha dubai 3*",
       "studio m arabian plaza hotel apartment 3*",
       "md hotel dubai 4*",
@@ -1028,13 +1121,15 @@
       "blue beach tower 5*",
       "millennium place mirdif 4*",
       "movenpick hotel apartments al mamzar dubai aprt",
-      "armani hotel dubai. 5*",
+      "armani hotel dubai 5*",
       "kempinski central avenue dubai 5*",
       "bvlgari resort dubai 5*",
-      "the st. regis dubai, the palm 5*",
+      "the st regis dubai, the palm 5*",
       "mandarin oriental jumeirah dubai 5*",
       "th8 palm dubai beach resort vignette collection 5*",
-      "jw marriott hotel marina 5*"
+      "jw marriott hotel marina 5*",
+      "royal hotel 3*",
+      "holiday inn dubai al-maktoum airport, an ihg hotel 4*"
     ],
     "rove dubai marina ***": [
       "rove dubai marina hotel 3*"
@@ -1043,13 +1138,13 @@
       "citymax business bay 4*"
     ],
     "fortune grand hotel ****": [
-      "fortune grand hotel. 4*"
+      "fortune grand hotel 4*"
     ],
     "lemon tree hotel dubai ****": [
       "lemon tree hotel dubai 4*"
     ],
     "best western plus pearl creek hotel ****": [
-      "best western plus pearl creek hotel. 4*"
+      "best western plus pearl creek hotel 4*"
     ],
     "aloft al mina, dubai ****": [
       "aloft al mina 4*"
@@ -1061,7 +1156,7 @@
       "arabian park edge by rotana 3*"
     ],
     "grand excelsior hotel bur dubai ****": [
-      "grand excelsior bur dubai. 4*"
+      "grand excelsior bur dubai 4*"
     ],
     "rose park hotel - al barsha ****": [
       "rose park al barsha 4*"
@@ -1070,13 +1165,13 @@
       "millennium central downtown 4*"
     ],
     "al khoory executive hotel ****": [
-      "al khoory executive. 3*"
+      "al khoory executive 3*"
     ],
     "movenpick hotel jumeirah beach *****": [
       "movenpick hotel jumeirah beach 5*"
     ],
     "rose rayhaan by rotana ****": [
-      "rose rayhaan by rotana. 4*"
+      "rose rayhaan by rotana 4*"
     ],
     "hyatt place dubai / baniyas square ****": [
       "hyatt place dubai baniyas square 4*"
@@ -1091,7 +1186,7 @@
       "riu dubai 4*"
     ],
     "centara mirage beach resort dubai ****": [
-      "centara mirage beach dubai 4*"
+      "centara mirage beach resort dubai 4*"
     ],
     "swissotel al ghurair by accorhotels *****": [
       "swissotel al ghurair dubai 5*"
@@ -1112,7 +1207,7 @@
       "swissotel al murooj 5*"
     ],
     "donatello hotel al barsha ****": [
-      "donatello hotel dubai. 4*"
+      "donatello hotel dubai 4*"
     ],
     "aloft the palm jumeirah ****": [
       "aloft palm jumeirah 4*"
@@ -1121,25 +1216,26 @@
       "tryp by wyndham dubai 4*"
     ],
     "amwaj rotana jumeirah beach *****": [
-      "amwaj rotana jumeirah beach. 5*"
+      "amwaj rotana jumeirah beach 5*"
     ],
     "signature hotel al barsha ****": [
-      "signature hotel tecom 4*"
+      "signature hotel tecom 4*",
+      "signature hotel al barsha 4*"
     ],
     "wyndham dubai marina ****": [
-      "wyndham dubai marina. 4*"
+      "wyndham dubai marina 4*"
     ],
     "stella di mare dubai marina *****": [
       "stella di mare dubai marina hotel 5*"
     ],
     "ramada downtown abu dhabi ****": [
-      "ramada downtown dubai. apart dlx"
+      "ramada downtown dubai apart dlx"
     ],
     "ramada hotel & suites by wyndham jbr ****": [
       "ramada hotel & suites by wyndham jbr 4*"
     ],
     "the retreat palm dubai *****": [
-      "the retreat palm dubai. 5*"
+      "the retreat palm dubai 5*"
     ],
     "hilton dubai the walk ****": [
       "hilton dubai the walk 4*"
@@ -1163,7 +1259,7 @@
       "nh dubai the palm 4*"
     ],
     "marina byblos hotel ****": [
-      "marina byblos. 4*"
+      "marina byblos 4*"
     ],
     "holiday inn dubai - al barsha ****": [
       "holiday inn dubai-al barsha 4*"
@@ -1175,13 +1271,10 @@
       "canal central business bay 5*"
     ],
     "palace downtown dubai *****": [
-      "rove downtown dubai. 3*"
+      "rove downtown dubai 3*"
     ],
     "voco dubai*****": [
       "voco monaco dubai 5*"
-    ],
-    "mercure hotels suites apartments, barsha heights hotel apartments standard": [
-      "mercure hotel apartmentsaprt"
     ],
     "the s hotel al barsha, dubai ****": [
       "the s hotel al barsha 4*"
@@ -1193,7 +1286,7 @@
       "the first collection business bay 4*"
     ],
     "manzil downtown dubai ****": [
-      "manzil downtown dubai. 4*"
+      "manzil downtown dubai 4*"
     ],
     "palazzo versace dubai *****": [
       "palazzo versace dubai 5*"
@@ -1202,7 +1295,7 @@
       "ja beach hotel 5*"
     ],
     "waldorf astoria palm jumeirah *****": [
-      "waldorf astoria palm jumeirah. 5*"
+      "waldorf astoria palm jumeirah 5*"
     ],
     "sheraton jumeirah beach resort & towers *****": [
       "sheraton jumeirah beach resort 5*"
@@ -1238,7 +1331,7 @@
       "atlantis the palm dubai 5*"
     ],
     "one & only the palm, dubai 5* deluxe": [
-      "one & only the palm. 5*"
+      "one & only the palm 5*"
     ],
     "raffles the palm dubai *****": [
       "raffles the palm 5*"
@@ -1250,7 +1343,7 @@
       "jumeirah beach hotel 5*"
     ],
     "sofitel dubai the palm 5* deluxe": [
-      "sofitel the palm. 5*"
+      "sofitel the palm 5*"
     ],
     "anantara dubai the palm resort & spa *****": [
       "anantara dubai the palm resort & spa 5*"
@@ -1286,7 +1379,7 @@
       "taj exotica resort & spa, the palm 5*"
     ],
     "the oberoi hotel *****": [
-      "the oberoi dubai. 5*"
+      "the oberoi dubai 5*"
     ],
     "grosvenor house dubai *****": [
       "grosvenor house 5*"
@@ -1299,6 +1392,33 @@
     ],
     "w dubai - the palm *****": [
       "w dubai - the palm 5*"
+    ],
+    "golden tulip deira hotel ****": [
+      "golden tulip deira 4*"
+    ],
+    "millennium plaza hotel dubai *****": [
+      "millennium plaza downtown hotel 5*"
+    ],
+    "rose plaza hotel - al barsha ***": [
+      "rose plaza hotel al barsha 3*"
+    ],
+    "signature hotel apartments & spa, marina hotel apartments deluxe": [
+      "signature hotel apartments & spa marina aprt"
+    ],
+    "dusit d2 kenz hotel dubai ****": [
+      "dusit d2 kenz hotel dubai 4*"
+    ],
+    "holiday inn express dubai internet city ***": [
+      "holiday inn express internet city 3*"
+    ],
+    "al khoory atrium hotel ****": [
+      "al khoory atrium 4*"
+    ],
+    "rixos bab al bahr *****": [
+      "rixos bab al bahr 5*"
+    ],
+    "mercure hotels suites & apartments, barsha heights hotel apartments": [
+      "mercure hotel apartments aprt"
     ]
   }
 }

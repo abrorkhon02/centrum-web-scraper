@@ -15,7 +15,7 @@
       "hotel wave 4*",
       "orbi sea towers hotel official 4*",
       "piazza four colours 3*",
-      "hotel salvador (ex. elegance) 4*",
+      "hotel salvador 4*",
       "hotel monarch 4*",
       "hotel bloom 4*",
       "tapis rouge design boutique hotel 4*",
@@ -24,7 +24,7 @@
       "suatis resort kazbegi 4*"
     ],
     "liva hotel 4*": [
-      "liva hotel (ex. epic hotel) 3*"
+      "liva hotel 3*"
     ],
     "voyager 3*": [
       "voyager hotel 3*"
@@ -50,7 +50,7 @@
     "king david meta business hotel 4*": [
       "meta business hotel by king david 4*"
     ],
-    "bazzar boutique hotel. 4*": [
+    "bazzar boutique hotel 4*": [
       "bazzar boutique hotel 4*"
     ],
     "tiflis palace 4*": [
@@ -77,7 +77,7 @@
     "city inn tbilisi 4*": [
       "city inn tbilisi 3*"
     ],
-    "magnolia. 4*": [
+    "magnolia 4*": [
       "hotel magnolia tbilisi 4*"
     ],
     "reikartz king tamar tbilisi 4*": [
@@ -90,7 +90,7 @@
       "urban boutique hotel 4*"
     ],
     "tbilisi laerton hotel 3*": [
-      "tbilisi laerton hotel 4* "
+      "tbilisi laerton hotel 4*"
     ],
     "iveria inn hotel 3*": [
       "iveria inn hotel 4*"
@@ -105,7 +105,7 @@
       "elea old tbilisi hotel 4*"
     ],
     "cron palace tbilisi hotel 4*": [
-      "cron palace tbilisi hotel 4* "
+      "cron palace tbilisi hotel 4*"
     ],
     "ramada by wyndham tbilisi old city 4*": [
       "ramada by wyndham tbilisi old city 4*"
@@ -114,7 +114,7 @@
       "hotel astoria tbilisi 4*"
     ],
     "bridge hotel 4*": [
-      "bridge hotel 4* "
+      "bridge hotel 4*"
     ],
     "hotel zeg 4*": [
       "zeg hotel 4*"
@@ -171,10 +171,10 @@
       "wyndham grand tbilisi 5*"
     ],
     "pullman tbilisi axis towers 5*": [
-      "pullman tbilisi axis towers 5* "
+      "pullman tbilisi axis towers 5*"
     ],
     "sheraton grand tbilisi metechi palace 5*": [
-      "sheraton grand tbilisi metechi palace 5* "
+      "sheraton grand tbilisi metechi palace 5*"
     ],
     "tbilisi marriott hotel 5*": [
       "tbilisi marriott hotel 5*"
@@ -242,7 +242,7 @@
     "new wave 4*": [
       "new wave hotel 4*"
     ],
-    "batumi view luxury. apartment": [
+    "batumi view luxury apartment": [
       "batumi view luxury 4*"
     ],
     "boutique hotel & hostel medusa 3*": [
@@ -315,7 +315,7 @@
       "piazza hotel tbilisi 3*"
     ],
     "liva hotel 3*": [
-      "liva hotel (ex. epic hotel) 3*"
+      "liva hotel 3*"
     ],
     "voyager 3*": [
       "voyager hotel 3*"
@@ -327,11 +327,11 @@
       "meta business hotel by king david 4*",
       "orbeliani residence hotel 4*",
       "reikartz king tamar 4*",
-      "tbilisi laerton hotel 4* ",
+      "tbilisi laerton hotel 4*",
       "elea old tbilisi hotel 4*",
-      "cron palace tbilisi hotel 4* ",
+      "cron palace tbilisi hotel 4*",
       "ramada by wyndham tbilisi old city 4*",
-      "bridge hotel 4* ",
+      "bridge hotel 4*",
       "hotel address 9d 4*",
       "folk boutique hotel 4*",
       "holiday inn express tbilisi avlabari, an ihg hotel 4*",
@@ -340,7 +340,7 @@
       "tbilisi philharmonic by mercure hotel 3*",
       "radisson red tbilisi 4*",
       "courtyard by marriott tbilisi 4*",
-      "sheraton grand tbilisi metechi palace 5* ",
+      "sheraton grand tbilisi metechi palace 5*",
       "tbilisi marriott hotel 5*",
       "radisson blu iveria hotel 5*",
       "paragraph freedom square, a luxury collection hotel, tbilisi 5*",
@@ -401,7 +401,7 @@
     "tbilisi inn 4*": [
       "tbilisi inn hotel 4*"
     ],
-    "city inn tbilisi (ex. shine on rustaveli) 3*": [
+    "city inn tbilisi 3*": [
       "city inn tbilisi 3*"
     ],
     "magnolia 4*": [
@@ -459,7 +459,7 @@
       "wyndham grand tbilisi 5*"
     ],
     "pullman tbilisi axis towers 5*": [
-      "pullman tbilisi axis towers 5* "
+      "pullman tbilisi axis towers 5*"
     ],
     "the biltmore 5*": [
       "the biltmore tbilisi hotel 5*"
@@ -509,7 +509,7 @@
     "batumi view luxury 4*": [
       "batumi view luxury 4*"
     ],
-    "piazza four colours 3*": [
+    "piazza four colours 4*": [
       "piazza four colours 3*"
     ],
     "graphic hotel batumi 4*": [
@@ -519,7 +519,7 @@
       "alliance palace batumi 4*"
     ],
     "hotel salvador 4*": [
-      "hotel salvador (ex. elegance) 4*"
+      "hotel salvador 4*"
     ],
     "hotel monarch 4*": [
       "hotel monarch 4*"
@@ -561,9 +561,9 @@
       "hotel wine palace 4*",
       "hotel magnolia tbilisi 4*",
       "urban boutique hotel 4*",
-      "tbilisi laerton hotel 4* ",
+      "tbilisi laerton hotel 4*",
       "elea old tbilisi hotel 4*",
-      "bridge hotel 4* ",
+      "bridge hotel 4*",
       "clocks hotel tbilisi 4*",
       "tbilisi philharmonic by mercure hotel 3*",
       "radisson blu iveria hotel 5*",
@@ -576,13 +576,13 @@
       "piazza four colours 3*",
       "boutique hotel o galogre 4*",
       "graphic hotel batumi 3*",
-      "hotel salvador (ex. elegance) 4*",
+      "hotel salvador 4*",
       "hotel bloom 4*",
       "era palace kvariati 4*",
       "park hotel tskaltubo - balneo resort 4*"
     ],
     "liva hotel 3*": [
-      "liva hotel (ex. epic hotel) 3*"
+      "liva hotel 3*"
     ],
     "hotel voyager 3*": [
       "voyager hotel 3*"
@@ -636,7 +636,7 @@
       "brim hotel tbilisi 4*"
     ],
     "cron palace 4*": [
-      "cron palace tbilisi hotel 4* "
+      "cron palace tbilisi hotel 4*"
     ],
     "ramada by wyndham tbilisi old city 4*": [
       "ramada by wyndham tbilisi old city 4*"
@@ -696,10 +696,10 @@
       "wyndham grand tbilisi 5*"
     ],
     "pullman tbilisi axis towers 5*": [
-      "pullman tbilisi axis towers 5* "
+      "pullman tbilisi axis towers 5*"
     ],
     "sheraton grand tbilisi metechi palace 5*": [
-      "sheraton grand tbilisi metechi palace 5* "
+      "sheraton grand tbilisi metechi palace 5*"
     ],
     "tbilisi marriott hotel 5*": [
       "tbilisi marriott hotel 5*"
@@ -826,7 +826,7 @@
     ],
     "na": [
       "vista hotel 3*",
-      "liva hotel (ex. epic hotel) 3*",
+      "liva hotel 3*",
       "voyager hotel 3*",
       "metekhi line hotel 4*",
       "alliance hotel 3*",
@@ -849,15 +849,15 @@
       "reikartz king tamar 4*",
       "zp palace hotel 4*",
       "urban boutique hotel 4*",
-      "tbilisi laerton hotel 4* ",
+      "tbilisi laerton hotel 4*",
       "iveria inn hotel 4*",
       "biography tbilisi 4*",
       "brim hotel tbilisi 4*",
       "elea old tbilisi hotel 4*",
-      "cron palace tbilisi hotel 4* ",
+      "cron palace tbilisi hotel 4*",
       "ramada by wyndham tbilisi old city 4*",
       "hotel astoria tbilisi 4*",
-      "bridge hotel 4* ",
+      "bridge hotel 4*",
       "zeg hotel 4*",
       "amante narikala boutique hotel 4*",
       "hotel address 9d 4*",
@@ -877,8 +877,8 @@
       "rooms hotel tbilisi 4*",
       "glarros oldtown 5*",
       "wyndham grand tbilisi 5*",
-      "pullman tbilisi axis towers 5* ",
-      "sheraton grand tbilisi metechi palace 5* ",
+      "pullman tbilisi axis towers 5*",
+      "sheraton grand tbilisi metechi palace 5*",
       "tbilisi marriott hotel 5*",
       "the biltmore tbilisi hotel 5*",
       "ambassadori new 5*",
@@ -900,7 +900,7 @@
       "komorebi bakuriani resort 4*",
       "bm plaza bakuriani 4*"
     ],
-    "piazza tbilisi 3*": [
+    "hotel piazza ***": [
       "piazza hotel tbilisi 3*"
     ],
     "hotel old star **": [
@@ -965,7 +965,7 @@
       "alliance palace batumi 4*"
     ],
     "hotel salvador ****": [
-      "hotel salvador (ex. elegance) 4*"
+      "hotel salvador 4*"
     ],
     "hotel monarch ****": [
       "hotel monarch 4*"

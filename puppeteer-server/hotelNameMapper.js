@@ -64,11 +64,11 @@ async function loadFromExcel(excelFilePath) {
 
     const rowValues = row.values;
 
-    const templateHotelName = (rowValues[1] || "NA").toLowerCase(); // Column A - Online Centrum
-    const kompastourHotelName = (rowValues[2] || "NA").toLowerCase(); // Column B - Kompastour
-    const funsunHotelName = (rowValues[3] || "NA").toLowerCase(); // Column C - FunSun
-    const easyBookingHotelName = (rowValues[4] || "NA").toLowerCase(); // Column D - EasyBooking
-    const prestigeUZHotelName = (rowValues[5] || "NA").toLowerCase(); // Column E - PrestigeUZ
+    const templateHotelName = normalizeHotelName(rowValues[1] || "NA"); // Column A - Online Centrum
+    const kompastourHotelName = normalizeHotelName(rowValues[2] || "NA"); // Column B - Kompastour
+    const funsunHotelName = normalizeHotelName(rowValues[3] || "NA"); // Column C - FunSun
+    const easyBookingHotelName = normalizeHotelName(rowValues[4] || "NA"); // Column D - EasyBooking
+    const prestigeUZHotelName = normalizeHotelName(rowValues[5] || "NA"); // Column E - PrestigeUZ
 
     // Function to add mapping
     const addMapping = (websiteName, websiteHotelName) => {
@@ -92,6 +92,33 @@ async function loadFromExcel(excelFilePath) {
     JSON.stringify(hotelMapping, null, 2)
   );
   return cleanMapping(hotelMapping);
+}
+
+function normalizeHotelName(name) {
+  // logger.info(`Original hotel name: ${name}`);
+
+  let normalized = name
+    .replace(/^\s*["']\s*|\s*["']\s*$/g, "") // Remove leading/trailing quotes
+    .replace(/\(\s*(\d+)\s*\*\s*\)/g, "$1*") // Remove parentheses around star levels
+    .replace(/\s*\([^()]*\)\s*/g, " ") // Remove text within single-level parentheses
+    .replace(/(\d\s?\*+|\*+\s?\d)/g, (match) => {
+      const stars = match.replace(/\D/g, ""); // Extract digit characters
+      return ` ${stars}* `; // Ensure space around stars
+    })
+    .replace(/\bthreestar\b/gi, "3*") // Replace "ThreeStar" with "3*"
+    .replace(/\bfourstar\b/gi, "4*") // Replace "FourStar" with "4*"
+    .replace(/\bfivestar\b/gi, "5*") // Replace "FiveStar" with "5*"
+    .replace(/\s*\([^)]*\)\s*/g, " ") // Remove all text within parentheses (again for nested)
+    .replace(/\.\s*\*/g, " *") // Remove periods before stars
+    .replace(/\*\s*\./g, "*") // Remove periods after stars
+    .replace(/\s*\.$/, "") // Remove trailing periods
+    .replace(/\./g, "") // Remove all periods (dots)
+    .replace(/\s+/g, " ") // Remove extra spaces
+    .trim()
+    .toLowerCase(); // Make case-insensitive
+
+  // logger.info(`Normalized hotel name: ${normalized}`);
+  return normalized;
 }
 
 // Clean the mapping to remove empty "na" objects and redundant "na" values

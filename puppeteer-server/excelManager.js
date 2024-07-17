@@ -86,7 +86,10 @@ class ExcelManager {
 
         let foundRow = null;
         let emptyCellCount = 0;
-        worksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
+        let stopProcessing = false;
+
+        worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+          if (stopProcessing) return; // Break out of the loop if needed
           if (rowNumber === 1) return;
 
           let cell = row.getCell(1);
@@ -100,9 +103,9 @@ class ExcelManager {
               logger.info(
                 "Encountered 3 or more consecutive empty cells, stopping processing."
               );
-              return false;
+              stopProcessing = true; // Set flag to stop processing
+              return;
             }
-            return;
           } else {
             emptyCellCount = 0;
           }
@@ -114,6 +117,8 @@ class ExcelManager {
           ) {
             foundRow = rowNumber;
             logger.info(`Hotel found in worksheet at row: ${foundRow}`);
+            stopProcessing = true; // Set flag to stop processing
+            return;
           }
         });
 
@@ -140,8 +145,10 @@ class ExcelManager {
     const normalizedInputName = this.normalizeHotelName(hotelName);
     let foundRow = null;
     let emptyCellCount = 0;
+    let stopProcessing = false;
 
-    worksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
+    worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+      if (stopProcessing) return; // Break out of the loop if needed
       if (rowNumber === 1) return;
       let cell = row.getCell(1);
       if (cell.isMerged && cell.master && rowNumber !== cell.master.row) {
@@ -154,9 +161,9 @@ class ExcelManager {
           logger.info(
             "Encountered 3 or more consecutive empty cells, stopping processing."
           );
-          return false;
+          stopProcessing = true; // Set flag to stop processing
+          return;
         }
-        return;
       } else {
         emptyCellCount = 0;
       }
@@ -168,6 +175,8 @@ class ExcelManager {
         logger.info(
           `Match found in template: scraped hotel name "${normalizedInputName}" matched with template hotel name "${normalizedTemplateName}" at row: ${foundRow}`
         );
+        stopProcessing = true; // Set flag to stop processing
+        return;
       }
     });
 
@@ -183,12 +192,12 @@ class ExcelManager {
   }
 
   normalizeHotelName(name) {
-    logger.info(`Original hotel name: ${name}`);
+    // logger.info(`Original hotel name: ${name}`);
 
     let normalized = name
       .replace(/^\s*["']\s*|\s*["']\s*$/g, "") // Remove leading/trailing quotes
       .replace(/\(\s*(\d+)\s*\*\s*\)/g, "$1*") // Remove parentheses around star levels
-      .replace(/\s*\([^()]*\)\s*/g, "") // Remove text within single-level parentheses
+      .replace(/\s*\([^()]*\)\s*/g, " ") // Remove text within single-level parentheses
       .replace(/(\d\s?\*+|\*+\s?\d)/g, (match) => {
         const stars = match.replace(/\D/g, ""); // Extract digit characters
         return ` ${stars}* `; // Ensure space around stars
@@ -196,15 +205,16 @@ class ExcelManager {
       .replace(/\bthreestar\b/gi, "3*") // Replace "ThreeStar" with "3*"
       .replace(/\bfourstar\b/gi, "4*") // Replace "FourStar" with "4*"
       .replace(/\bfivestar\b/gi, "5*") // Replace "FiveStar" with "5*"
-      .replace(/\s*\([^)]*\)\s*/g, "") // Remove all text within parentheses (again for nested)
+      .replace(/\s*\([^)]*\)\s*/g, " ") // Remove all text within parentheses (again for nested)
       .replace(/\.\s*\*/g, " *") // Remove periods before stars
       .replace(/\*\s*\./g, "*") // Remove periods after stars
       .replace(/\s*\.$/, "") // Remove trailing periods
+      .replace(/\./g, "") // Remove all periods (dots)
       .replace(/\s+/g, " ") // Remove extra spaces
       .trim()
       .toLowerCase(); // Make case-insensitive
 
-    logger.info(`Normalized hotel name: ${normalized}`);
+    // logger.info(`Normalized hotel name: ${normalized}`);
     return normalized;
   }
 
@@ -251,28 +261,30 @@ class ExcelManager {
     // Remove HTML tags
     let normalized = roomType.replace(/<[^>]*>/g, "");
 
-    // Normalize the room type
-    normalized = normalized
-      .toLowerCase()
-      .replace(
-        /\b(dbl|double|2\s*adl?s?|2adult?|2pax|king|queen|wall)\b/g,
-        "double"
-      )
-      .replace(/\b(twin)\b/g, "double")
-      .replace(/\b(econom(?:y)?|standard|budget|std)\b/g, "standard")
-      .replace(/\broom\b/g, "")
-      .replace(/\bsingle\b/g, "single")
-      .replace(/\btriple\b/g, "triple")
-      .replace(/\bquad\b/g, "quad")
-      .replace(/\bexecutive\b/g, "executive")
-      .replace(/\bsuperior\b/g, "superior")
-      .replace(
-        /\b(with|and|or|street|view|balcony|city|sea|garden|back|opera|high|floor|partial|sea)\b/g,
-        ""
-      )
-      .replace(/\s+/g, " ") // Remove extra spaces
-      .trim();
-
+    // Check for primary keywords first
+    const primaryKeywords =
+      /\b(dbl|double|2\s*adl?s?|2adult?|2pax|king|queen|wall)\b/gi;
+    if (primaryKeywords.test(normalized)) {
+      normalized = "double";
+    } else {
+      // Normalize the room type
+      normalized = normalized
+        .toLowerCase()
+        .replace(/\b(econom(?:y)?|standard|budget|std)\b/g, "standard")
+        .replace(/\broom\b/g, "")
+        .replace(/\bsingle\b/g, "single")
+        .replace(/\btriple\b/g, "triple")
+        .replace(/\bquad\b/g, "quad")
+        .replace(/\bexecutive\b/g, "executive")
+        .replace(/\bsuperior\b/g, "superior")
+        .replace(/\b(twin)\b/g, "double")
+        .replace(
+          /\b(with|and|or|street|view|balcony|city|sea|garden|back|opera|high|floor|partial|sea)\b/g,
+          ""
+        )
+        .replace(/\s+/g, " ") // Remove extra spaces
+        .trim();
+    }
     return normalized;
   }
 
@@ -325,7 +337,11 @@ class ExcelManager {
       Kazunion: 6,
       PrestigeUZ: 7,
       AsiaLuxe: 8,
-      EasyBooking: destination.toLowerCase() === "uae" ? 9 : 8,
+      EasyBooking:
+        destination.toLowerCase() === "uae" ||
+        destination.toLowerCase() === "оаэ"
+          ? 9
+          : 8,
     };
     const priceCol = aggregatorColumns[offer.aggregator] || 11; // Default to 11 (outside of the template bounds) if aggregator not found
     const roomTypeCol =

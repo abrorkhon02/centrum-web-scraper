@@ -88,7 +88,7 @@ app.post("/api/start-session", upload.single("file"), async (req, res) => {
     }
 
     if (scrapeResult.data.length === 0) {
-      throw new Error("No data found on the page.");
+      logger.warn("No data found on the page.");
     }
 
     let aggregatedData = aggregateData(scrapeResult);
@@ -96,7 +96,7 @@ app.post("/api/start-session", upload.single("file"), async (req, res) => {
     const country =
       scrapeResult.destinationAndStartDate.destination.toLowerCase();
     const actualHotelMapping =
-      country === "uae" ? uaeHotelMapping : georgiaHotelMapping;
+      country === "uae" || "оаэ" ? uaeHotelMapping : georgiaHotelMapping;
 
     await processAndUpdateFile(
       tempFilePath,
