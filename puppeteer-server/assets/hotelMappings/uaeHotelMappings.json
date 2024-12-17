@@ -9,7 +9,7 @@
     "millennium place barsha heights 4*": [
       "millennium place barsha heights 4*"
     ],
-    "hyatt place dubai wasl district 4*": [
+    "hyatt place wasl district 4*": [
       "hyatt place dubai/wasl district 4*"
     ],
     "copthorne hotel dubai 4*": [
@@ -65,9 +65,6 @@
     ],
     "rose park al barsha 4*": [
       "rose park al barsha 4*"
-    ],
-    "millennium central downtown dubai 4*": [
-      "millennium central downtown 4*"
     ],
     "al khoory executive hotel 3*": [
       "al khoory executive 3*"
@@ -129,7 +126,7 @@
     "signature 1 hotel tecom 4*": [
       "signature hotel tecom 4*"
     ],
-    "wyndham dubai marina 4*": [
+    "the first collection marina 4*": [
       "wyndham dubai marina 4*"
     ],
     "stella di mare dubai 5*": [
@@ -362,6 +359,51 @@
     ],
     "holiday inn dubai al maktoum airport 4*": [
       "holiday inn dubai al-maktoum airport, an ihg hotel 4*"
+    ],
+    "the tower plaza hotel dubai 5*": [
+      "the tower plaza hotel dubai 5*"
+    ],
+    "radisson resort ras al khaimah, marjan island 4*": [
+      "radisson resort ras al khaimah marjan island 4*"
+    ],
+    "movenpick grand al bustan 5*": [
+      "movenpick grand al bustan dubai 5*"
+    ],
+    "hampton by hilton marjan island 4*": [
+      "hampton by hilton marjan island 4*"
+    ],
+    "holiday inn express safa park 3*": [
+      "holiday inn express safa park 3*"
+    ],
+    "landmark plaza hotel 3*": [
+      "landmark plaza hotel baniyas 3*"
+    ],
+    "roda amwaj suites apartment deluxe": [
+      "roda amwaj suites jumeirah beach residence aprt"
+    ],
+    "ibis styles hotel jumeira dubai 3*": [
+      "ibis styles hotel jumeirah 3*"
+    ],
+    "carlton tower hotel dubai 4*": [
+      "carlton tower 4*"
+    ],
+    "first central hotel suites apartment": [
+      "first central hotel suites aprt"
+    ],
+    "ramada plaza by wyndham dubai deira 4*": [
+      "ramada plaza by wyndham dubai deira 4*"
+    ],
+    "ramada by wyndham dubai barsha heights 4*": [
+      "ramada by wyndham barsha heights 4*"
+    ],
+    "marina view hotel apartments apartment": [
+      "marina view hotel apartments aprt"
+    ],
+    "holiday inn express dubai airport 3*": [
+      "holiday inn express, dubai airport 2*"
+    ],
+    "millennium central downtown dubai 4*": [
+      "millennium central downtown hotel 4*"
     ]
   },
   "FunSun": {
@@ -431,9 +473,6 @@
     "rose park hotel 4*": [
       "rose park al barsha 4*"
     ],
-    "millennium central downtown 4*": [
-      "millennium central downtown 4*"
-    ],
     "al khoory executive 3*": [
       "al khoory executive 3*"
     ],
@@ -446,7 +485,7 @@
     "rose rayhaan by rotana 4*": [
       "rose rayhaan by rotana 4*"
     ],
-    "hyatt place baniyas square 4*": [
+    "hyatt place dubai baniyas square 4*": [
       "hyatt place dubai baniyas square 4*"
     ],
     "hyatt place dubai al rigga 4*": [
@@ -497,7 +536,7 @@
     "wyndham dubai marina 4*": [
       "wyndham dubai marina 4*"
     ],
-    "stella di mare dubai marina 5*": [
+    "stella di mare dubai marina hotel 5*": [
       "stella di mare dubai marina hotel 5*"
     ],
     "ramada downtown dubai 4*": [
@@ -521,7 +560,7 @@
     "gevora hotel 4*": [
       "gevora hotel 4*"
     ],
-    "media rotana dubai 5*": [
+    "media rotana hotel 5*": [
       "media rotana dubai 5*"
     ],
     "dukes the palm a royal hideaway hotel 5*": [
@@ -701,7 +740,7 @@
     "signature hotel al barsha 4*": [
       "signature hotel al barsha 4*"
     ],
-    "golden tulip deira 4*": [
+    "golden tulip deira 3*": [
       "golden tulip deira 4*"
     ],
     "millennium plaza downtown hotel 5*": [
@@ -710,7 +749,7 @@
     "rose plaza hotel al barsha 3*": [
       "rose plaza hotel al barsha 3*"
     ],
-    "signature hotel apartments & spa marina 4": [
+    "signature hotel apartments & spa marina 4*": [
       "signature hotel apartments & spa marina aprt"
     ],
     "dusit d2 kenz hotel dubai 4*": [
@@ -728,9 +767,56 @@
     "rixos bab al bahr 5*": [
       "rixos bab al bahr 5*"
     ],
-    "na": [
-      "mercure hotel apartments aprt",
+    "mercure hotel suites & apartments, barsha heights 4*": [
+      "mercure hotel apartments aprt"
+    ],
+    "holiday inn dubai al maktoum 4*": [
       "holiday inn dubai al-maktoum airport, an ihg hotel 4*"
+    ],
+    "tower plaza hotel dubai 5*": [
+      "the tower plaza hotel dubai 5*"
+    ],
+    "radisson resort ras al khaimah marjan island 4*": [
+      "radisson resort ras al khaimah marjan island 4*"
+    ],
+    "movenpick grand al bustan dubai 5*": [
+      "movenpick grand al bustan dubai 5*"
+    ],
+    "hampton by hilton marjan island 4*": [
+      "hampton by hilton marjan island 4*"
+    ],
+    "holiday inn express safa park 3*": [
+      "holiday inn express safa park 3*"
+    ],
+    "landmark plaza baniyas hotel 3*": [
+      "landmark plaza hotel baniyas 3*"
+    ],
+    "roda amwaj suites jumeirah beach residence apt": [
+      "roda amwaj suites jumeirah beach residence aprt"
+    ],
+    "ibis styles dubai jumeirah 3*": [
+      "ibis styles hotel jumeirah 3*"
+    ],
+    "carlton tower 4*": [
+      "carlton tower 4*"
+    ],
+    "first central hotel suites std apt": [
+      "first central hotel suites aprt"
+    ],
+    "ramada plaza by wyndham dubai deira 4* wyndham dubai deira 4*": [
+      "ramada plaza by wyndham dubai deira 4*"
+    ],
+    "ramada by wyndham dubai barsha heights 4*": [
+      "ramada by wyndham barsha heights 4*"
+    ],
+    "marina view hotel apartment apt": [
+      "marina view hotel apartments aprt"
+    ],
+    "holiday inn express dubai airport 3*": [
+      "holiday inn express, dubai airport 2*"
+    ],
+    "millennium central downtown 4*": [
+      "millennium central downtown hotel 4*"
     ]
   },
   "EasyBooking": {
@@ -768,8 +854,7 @@
       "the first collection business bay 4*",
       "manzil downtown dubai 4*",
       "kempinski central avenue dubai 5*",
-      "the st regis dubai, the palm 5*",
-      "holiday inn dubai al-maktoum airport, an ihg hotel 4*"
+      "the st regis dubai, the palm 5*"
     ],
     "lemon tree hotel 4*": [
       "lemon tree hotel dubai 4*"
@@ -800,9 +885,6 @@
     ],
     "rose park al barsha 4*": [
       "rose park al barsha 4*"
-    ],
-    "millennium central downtown 4*": [
-      "millennium central downtown 4*"
     ],
     "al khoory executive hotel 3*": [
       "al khoory executive 3*"
@@ -1088,6 +1170,54 @@
     ],
     "mercure hotel apartments apr": [
       "mercure hotel apartments aprt"
+    ],
+    "holiday inn dubai al maktoum 4*": [
+      "holiday inn dubai al-maktoum airport, an ihg hotel 4*"
+    ],
+    "the tower plaza hotel dubai 5*": [
+      "the tower plaza hotel dubai 5*"
+    ],
+    "radisson resort ras al khaimah marjan island 4*": [
+      "radisson resort ras al khaimah marjan island 4*"
+    ],
+    "movenpick grand al bustan dubai 5*": [
+      "movenpick grand al bustan dubai 5*"
+    ],
+    "hampton by hilton marjan island 4*": [
+      "hampton by hilton marjan island 4*"
+    ],
+    "holiday inn express safa park 3*": [
+      "holiday inn express safa park 3*"
+    ],
+    "landmark plaza baniyas 3*": [
+      "landmark plaza hotel baniyas 3*"
+    ],
+    "roda amwaj suites apr": [
+      "roda amwaj suites jumeirah beach residence aprt"
+    ],
+    "ibis styles hotel dubai jumeirah 3*": [
+      "ibis styles hotel jumeirah 3*"
+    ],
+    "carlton tower hotel 4*": [
+      "carlton tower 4*"
+    ],
+    "first central hotel suites apr": [
+      "first central hotel suites aprt"
+    ],
+    "ramada plaza by wyndham dubai deira 4*": [
+      "ramada plaza by wyndham dubai deira 4*"
+    ],
+    "ramada by wyndham dubai barsha heights 4*": [
+      "ramada by wyndham barsha heights 4*"
+    ],
+    "marina view hotel apartments apr": [
+      "marina view hotel apartments aprt"
+    ],
+    "holiday inn express dubai airport 2*": [
+      "holiday inn express, dubai airport 2*"
+    ],
+    "millennium central downtown 4*": [
+      "millennium central downtown hotel 4*"
     ]
   },
   "PrestigeUZ": {
@@ -1115,7 +1245,6 @@
       "comfort inn hotel 3*",
       "ibis al barsha dubai 3*",
       "studio m arabian plaza hotel apartment 3*",
-      "md hotel dubai 4*",
       "damac hills 2 hotel edge by rotana 3*",
       "holiday inn & suites dubai science park al barsha 4*",
       "blue beach tower 5*",
@@ -1129,7 +1258,8 @@
       "th8 palm dubai beach resort vignette collection 5*",
       "jw marriott hotel marina 5*",
       "royal hotel 3*",
-      "holiday inn dubai al-maktoum airport, an ihg hotel 4*"
+      "the tower plaza hotel dubai 5*",
+      "ramada by wyndham barsha heights 4*"
     ],
     "rove dubai marina ***": [
       "rove dubai marina hotel 3*"
@@ -1155,14 +1285,14 @@
     "arabian park edge by rotana ***": [
       "arabian park edge by rotana 3*"
     ],
+    "md hotel ****": [
+      "md hotel dubai 4*"
+    ],
     "grand excelsior hotel bur dubai ****": [
       "grand excelsior bur dubai 4*"
     ],
     "rose park hotel - al barsha ****": [
       "rose park al barsha 4*"
-    ],
-    "millennium central downtown ****": [
-      "millennium central downtown 4*"
     ],
     "al khoory executive hotel ****": [
       "al khoory executive 3*"
@@ -1218,9 +1348,8 @@
     "amwaj rotana jumeirah beach *****": [
       "amwaj rotana jumeirah beach 5*"
     ],
-    "signature hotel al barsha ****": [
-      "signature hotel tecom 4*",
-      "signature hotel al barsha 4*"
+    "signature 1 hotel barsha heights - tecom ****": [
+      "signature hotel tecom 4*"
     ],
     "wyndham dubai marina ****": [
       "wyndham dubai marina 4*"
@@ -1393,6 +1522,9 @@
     "w dubai - the palm *****": [
       "w dubai - the palm 5*"
     ],
+    "signature hotel al barsha ****": [
+      "signature hotel al barsha 4*"
+    ],
     "golden tulip deira hotel ****": [
       "golden tulip deira 4*"
     ],
@@ -1417,8 +1549,50 @@
     "rixos bab al bahr *****": [
       "rixos bab al bahr 5*"
     ],
-    "mercure hotels suites & apartments, barsha heights hotel apartments": [
+    "mercure hotels suites & apartments, barsha heights hotel apartments standard": [
       "mercure hotel apartments aprt"
+    ],
+    "holiday inn dubai al maktoum airport ****": [
+      "holiday inn dubai al-maktoum airport, an ihg hotel 4*"
+    ],
+    "radisson resort ras al khaimah marjan island ****": [
+      "radisson resort ras al khaimah marjan island 4*"
+    ],
+    "movenpick grand al bustan dubai *****": [
+      "movenpick grand al bustan dubai 5*"
+    ],
+    "hampton by hilton spa marjan island ****": [
+      "hampton by hilton marjan island 4*"
+    ],
+    "holiday inn express safa ***": [
+      "holiday inn express safa park 3*"
+    ],
+    "landmark plaza baniyas ***": [
+      "landmark plaza hotel baniyas 3*"
+    ],
+    "roda amwaj suites hotel apartments standard": [
+      "roda amwaj suites jumeirah beach residence aprt"
+    ],
+    "ibis styles dubai jumeirah hotel ***": [
+      "ibis styles hotel jumeirah 3*"
+    ],
+    "carlton tower hotel ****": [
+      "carlton tower 4*"
+    ],
+    "first central hotel suites hotel apartments standard": [
+      "first central hotel suites aprt"
+    ],
+    "ramada by wyndham dubai deira ****": [
+      "ramada plaza by wyndham dubai deira 4*"
+    ],
+    "marina view hotel apartments hotel apartments deluxe": [
+      "marina view hotel apartments aprt"
+    ],
+    "holiday inn express dubai airport **": [
+      "holiday inn express, dubai airport 2*"
+    ],
+    "millennium central downtown ****": [
+      "millennium central downtown hotel 4*"
     ]
   }
 }

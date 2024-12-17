@@ -1,6 +1,6 @@
 {
   "name": "cws",
-  "version": "1.4.2",
+  "version": "1.5.1",
   "description": "Centrum Web Scraper - comprehensive web scraping tool for Online Centrum Holidays",
   "bin": "server.js",
   "scripts": {
@@ -32,6 +32,7 @@
     "body-parser": "^1.20.2",
     "cmpstr": "^1.0.3",
     "cors": "^2.8.5",
+    "cws": "file:",
     "exceljs": "^4.4.0",
     "express": "^4.19.2",
     "moment-timezone": "^0.5.45",

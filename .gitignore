@@ -24,3 +24,4 @@ chromium
 
 #Dist Frontend
 frontend
+puppeteer-server/cws.exe

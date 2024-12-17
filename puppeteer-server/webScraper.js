@@ -176,7 +176,7 @@ class WebScraper {
     }
   }
 
-  async ensurePageLoad(page, url, retryInterval = 10000) {
+  async ensurePageLoad(page, url, retryInterval = 15000) {
     const startTime = Date.now();
     let loaded = false;
 
